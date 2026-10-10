@@ -1,0 +1,17 @@
+{
+  "id": "a1b42692-45f6-4d0f-9726-051d593706f2",
+  "questionPattern": "How many years of professional experience do you have?",
+  "aliases": [
+    "Years of software experience",
+    "Total professional experience"
+  ],
+  "category": "experience_years",
+  "responseType": "numeric",
+  "canonicalAnswer": "2+",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.012Z",
+  "updatedAt": "2026-10-07T00:36:31.012Z"
+}

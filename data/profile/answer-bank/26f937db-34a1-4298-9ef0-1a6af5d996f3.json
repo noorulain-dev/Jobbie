@@ -1,0 +1,18 @@
+{
+  "id": "26f937db-34a1-4298-9ef0-1a6af5d996f3",
+  "questionPattern": "How soon can you start?",
+  "aliases": [
+    "Notice period",
+    "Earliest start date",
+    "Availability to start"
+  ],
+  "category": "notice_period",
+  "responseType": "free_text",
+  "canonicalAnswer": "Immediate",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.006Z",
+  "updatedAt": "2026-10-07T00:36:31.006Z"
+}

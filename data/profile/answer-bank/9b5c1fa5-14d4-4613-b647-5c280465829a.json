@@ -1,0 +1,17 @@
+{
+  "id": "9b5c1fa5-14d4-4613-b647-5c280465829a",
+  "questionPattern": "Please share your GitHub link",
+  "aliases": [
+    "GitHub URL",
+    "GitHub Profile"
+  ],
+  "category": "links",
+  "responseType": "free_text",
+  "canonicalAnswer": "https://github.com/noor-ul-ain-k",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.014Z",
+  "updatedAt": "2026-10-07T00:36:31.014Z"
+}

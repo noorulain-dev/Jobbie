@@ -1,0 +1,17 @@
+{
+  "id": "39b57772-42bc-49e5-bec5-c95be39e25cc",
+  "questionPattern": "Will you require sponsorship?",
+  "aliases": [
+    "Require visa sponsorship",
+    "Need sponsorship now or in the future"
+  ],
+  "category": "sponsorship",
+  "responseType": "yes_no",
+  "canonicalAnswer": "No",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.005Z",
+  "updatedAt": "2026-10-07T00:36:31.005Z"
+}

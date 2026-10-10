@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jobby Career Brain</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span style="font-size: 1.5rem;">🧠</span>
+      <h1>JOBBY CAREER BRAIN</h1>
+      <span class="badge">Master Profile Engine</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="exportData()">⬇ Export JSON</button>
+      <label class="btn btn-secondary" style="cursor: pointer;">
+        ⬆ Import JSON
+        <input type="file" id="importInput" style="display: none;" onchange="importData(event)" accept=".json">
+      </label>
+      <button class="btn btn-success" onclick="saveMasterProfile()">💾 Save Master Profile</button>
+    </div>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('master')">Master Profile</button>
+    <button class="tab-btn" onclick="switchTab('career')">Career Profiles</button>
+    <button class="tab-btn" onclick="switchTab('skills')">Skill Intelligence</button>
+    <button class="tab-btn" onclick="switchTab('answers')">Application Answer Bank</button>
+    <button class="tab-btn" onclick="switchTab('history')">Version History</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: MASTER PROFILE -->
+    <section id="tab-master" class="tab-pane active">
+      <div class="grid-2">
+        <!-- Personal & Contact -->
+        <div class="card">
+          <div class="card-title">👤 Personal Information</div>
+          <div class="grid-2" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.5rem;">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" id="p_firstName" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" id="p_lastName" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="p_email" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" id="p_phone" class="form-control">
+          </div>
+          <div class="grid-3" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="form-group">
+              <label>City</label>
+              <input type="text" id="p_city" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Province / State</label>
+              <input type="text" id="p_provinceState" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Country</label>
+              <input type="text" id="p_country" class="form-control">
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact & Links -->
+        <div class="card">
+          <div class="card-title">🔗 Contact Links</div>
+          <div class="form-group">
+            <label>LinkedIn URL</label>
+            <input type="url" id="p_linkedin" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>GitHub URL</label>
+            <input type="url" id="p_github" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Portfolio URL</label>
+            <input type="url" id="p_portfolio" class="form-control">
+          </div>
+        </div>
+      </div>
+
+      <!-- Screening / Application Facts -->
+      <div class="card">
+        <div class="card-title">📝 Screening & Work Authorization Facts</div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Work Authorization</label>
+            <input type="text" id="s_workAuth" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Sponsorship Required</label>
+            <input type="text" id="s_sponsorship" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Target Salary</label>
+            <input type="text" id="s_salary" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Notice Period</label>
+            <input type="text" id="s_notice" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Years of Experience</label>
+            <input type="text" id="s_experience" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Remote Policy / Eligibility</label>
+            <input type="text" id="s_remote" class="form-control">
+          </div>
+        </div>
+      </div>
+
+      <!-- Experience & Projects -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>💼 Work Experience</span>
+            <span class="badge" id="expCountBadge">0</span>
+          </div>
+          <div id="experienceList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>🚀 Featured Projects</span>
+            <span class="badge" id="projCountBadge">0</span>
+          </div>
+          <div id="projectsList"></div>
+        </div>
+      </div>
+      <!-- Education, Certifications, Awards, Leadership, Languages -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🎓 Education</div>
+          <div id="educationList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📜 Certifications</div>
+          <div id="certList"></div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">🏆 Awards</div>
+          <div id="awardsList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🤝 Leadership & Volunteering</div>
+          <div id="leadershipList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🌐 Languages Spoken</div>
+          <div id="languagesList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CAREER PROFILES -->
+    <section id="tab-career" class="tab-pane">
+      <div class="profile-tabs" id="careerProfileTabs"></div>
+      <div id="careerProfileContent"></div>
+    </section>
+
+    <!-- TAB 3: SKILL INTELLIGENCE -->
+    <section id="tab-skills" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>🧠 Skill Intelligence Breakdown</span>
+          <div style="font-size: 0.85rem; font-weight: normal; color: var(--text-muted);">
+            Manage verified skills, approval workflow, and claim directives.
+          </div>
+        </div>
+        <div class="profile-tabs" style="margin-bottom: 1rem;">
+          <button class="profile-tab-btn active" onclick="filterSkills('ALL')">All Skills (<span id="count_all">0</span>)</button>
+          <button class="profile-tab-btn" onclick="filterSkills('EXPLICIT_KNOWN')">Known (<span id="count_known">0</span>)</button>
+          <button class="profile-tab-btn" onclick="filterSkills('USER_APPROVED_KNOWN')">User-Approved Inferred (<span id="count_approved">0</span>)</button>
+          <button class="profile-tab-btn" onclick="filterSkills('PENDING_INFERRED')">Needs Review (<span id="count_pending">0</span>)</button>
+          <button class="profile-tab-btn" onclick="filterSkills('LEARNING_TARGET')">Learning Targets (<span id="count_learning">0</span>)</button>
+          <button class="profile-tab-btn" onclick="filterSkills('DO_NOT_CLAIM')">Never Claim (<span id="count_prohibited">0</span>)</button>
+        </div>
+
+        <!-- Pending suggestions review banner if any -->
+        <div id="pendingReviewBanner" style="display: none; background: #2e1065; border: 1px solid #7c3aed; border-radius: 6px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-weight: 600; color: #d8b4fe; margin-bottom: 0.5rem;">✨ Inferred Skills Awaiting Review</div>
+          <div id="pendingReviewList"></div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Skill Name</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Aliases</th>
+                <th>Evidence / Source</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="skillsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: APPLICATION ANSWER BANK -->
+    <section id="tab-answers" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>📋 Application Answer Bank</span>
+          <button class="btn btn-success" onclick="openNewAnswerModal()">+ Add Answer</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30%;">Question Pattern</th>
+                <th style="width: 25%;">Saved Answer</th>
+                <th>Category / Type</th>
+                <th>Source</th>
+                <th>Confidence</th>
+                <th>Usage</th>
+                <th>Last Used</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="answerBankTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    <!-- TAB 5: VERSION HISTORY & AUDIT TRAIL -->
+    <section id="tab-history" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>📜 Master Profile Version History & Provenance</span>
+          <button class="btn btn-secondary" onclick="loadHistory()">🔄 Refresh History</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 8%;">Version</th>
+                <th style="width: 17%;">Timestamp</th>
+                <th style="width: 15%;">Origin Source</th>
+                <th style="width: 10%;">Actor</th>
+                <th style="width: 25%;">Change Reason</th>
+                <th style="width: 15%;">Fields Changed</th>
+                <th style="width: 10%;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    </section>
+  </main>
+
+  <div id="toast" class="toast">Saved successfully!</div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+

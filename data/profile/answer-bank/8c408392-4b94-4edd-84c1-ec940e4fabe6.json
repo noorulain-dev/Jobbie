@@ -1,0 +1,17 @@
+{
+  "id": "8c408392-4b94-4edd-84c1-ec940e4fabe6",
+  "questionPattern": "Highest level of education?",
+  "aliases": [
+    "Highest degree attained",
+    "Level of education"
+  ],
+  "category": "education",
+  "responseType": "dropdown",
+  "canonicalAnswer": "Master of Science in Computer Science",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.010Z",
+  "updatedAt": "2026-10-07T00:36:31.010Z"
+}

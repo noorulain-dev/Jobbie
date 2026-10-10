@@ -1,0 +1,17 @@
+{
+  "id": "1bd64bb7-c0ce-472d-adc7-dbff4f3199fb",
+  "questionPattern": "Where are you located?",
+  "aliases": [
+    "Current location",
+    "City of residence"
+  ],
+  "category": "location",
+  "responseType": "free_text",
+  "canonicalAnswer": "Toronto, Ontario, Canada",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.008Z",
+  "updatedAt": "2026-10-07T00:36:31.008Z"
+}

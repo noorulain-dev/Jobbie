@@ -1,0 +1,78 @@
+{
+  "personal": {
+    "firstName": "Alex",
+    "lastName": "Doe",
+    "email": "alex.doe@example.com",
+    "phone": "+15551234567",
+    "city": "Sample City",
+    "provinceState": "State",
+    "country": "Country",
+    "linkedin": "https://linkedin.com/in/example-alex",
+    "github": "https://github.com/example-alex",
+    "portfolio": "https://example.com"
+  },
+  "screening": {
+    "workAuthorization": "Citizen / Authorized",
+    "sponsorshipRequired": "No",
+    "targetSalary": "$100,000/year",
+    "noticePeriod": "2 weeks",
+    "yearsExperience": "5+",
+    "remoteEligibility": "Remote or Hybrid"
+  },
+  "education": [
+    {
+      "degree": "Bachelor of Science in Computer Science",
+      "major": "Computer Science",
+      "institution": "Sample State University",
+      "location": "Sample City, State",
+      "status": "Completed",
+      "gpa": "3.80",
+      "coursework": ["Data Structures", "Distributed Systems"]
+    }
+  ],
+  "technical": {
+    "languages": ["TypeScript", "Python"],
+    "frameworksAndLibraries": ["React", "FastAPI"],
+    "cloudAndInfrastructure": ["Docker", "AWS (EC2, S3)"],
+    "dataAndStorage": ["PostgreSQL", "Redis"],
+    "queuesAndAsync": ["Celery", "RabbitMQ"],
+    "emailAndDeliverability": ["Postfix"],
+    "billingAndAuth": ["Stripe"],
+    "crmAndMarketing": ["HubSpot"],
+    "toolsAndHardware": ["Git", "Linux"]
+  },
+  "experience": [
+    {
+      "company": "Acme Technologies",
+      "role": "Senior Software Engineer",
+      "dates": "Jan 2022 - Present",
+      "location": "Remote",
+      "bulletPoints": [
+        "Architected scalable backend microservices handling 5M daily requests."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Cloud Observability Platform",
+      "url": "https://example.com/project",
+      "techStack": "TypeScript, React, PostgreSQL",
+      "description": "Real-time metrics aggregator and dashboard."
+    }
+  ],
+  "certifications": [
+    {
+      "title": "AWS Certified Solutions Architect",
+      "year": "2023"
+    }
+  ],
+  "awards": [
+    "Innovation Excellence Award (2022)"
+  ],
+  "leadershipAndVolunteering": [
+    "Open Source Contributor & Mentor"
+  ],
+  "languagesSpoken": [
+    {"language": "English", "proficiency": "Native"}
+  ]
+}

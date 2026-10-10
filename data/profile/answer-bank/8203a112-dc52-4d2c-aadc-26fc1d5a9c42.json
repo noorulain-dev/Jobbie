@@ -1,0 +1,17 @@
+{
+  "id": "8203a112-dc52-4d2c-aadc-26fc1d5a9c42",
+  "questionPattern": "Are you legally authorized to work in Canada?",
+  "aliases": [
+    "Work authorization status Canada",
+    "Eligible to work in Canada"
+  ],
+  "category": "work_authorization",
+  "responseType": "yes_no",
+  "canonicalAnswer": "Yes",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:30.992Z",
+  "updatedAt": "2026-10-07T00:36:30.992Z"
+}

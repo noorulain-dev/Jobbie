@@ -1,0 +1,49 @@
+# Operating System & Environment
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
+.env.*.local
+
+# Node & package managers
+node_modules/
+dist/
+build/
+.pnpm-debug.log*
+
+# Python Virtual Environments & Caches
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Test coverage
+coverage/
+
+# Local database files
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/profile/master-profile.db
+
+# User private canonical & generated profiles (NEVER commit user PII, real profiles, or resumes)
+data/source/*.pdf
+data/source/*.docx
+data/source/*.doc
+data/source/profile-seed.json
+data/profile/*.json
+data/profile/*.jsonl
+data/profile/career-profiles/*.json
+data/generated/*
+!data/generated/.gitkeep
+!data/source/.gitkeep
+!data/profile/.gitkeep
+!data/source/profile-seed.example.json
+

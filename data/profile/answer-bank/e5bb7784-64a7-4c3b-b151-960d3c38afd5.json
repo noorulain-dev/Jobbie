@@ -1,0 +1,17 @@
+{
+  "id": "e5bb7784-64a7-4c3b-b151-960d3c38afd5",
+  "questionPattern": "What is your LinkedIn profile URL?",
+  "aliases": [
+    "LinkedIn URL",
+    "LinkedIn Profile"
+  ],
+  "category": "links",
+  "responseType": "free_text",
+  "canonicalAnswer": "https://linkedin.com/in/noorulain-k",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.013Z",
+  "updatedAt": "2026-10-07T00:36:31.013Z"
+}

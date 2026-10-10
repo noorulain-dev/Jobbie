@@ -1,0 +1,17 @@
+{
+  "id": "1f8b6649-8821-4c0d-b08e-3318eca9e666",
+  "questionPattern": "Please share your portfolio link",
+  "aliases": [
+    "Portfolio URL",
+    "Personal website"
+  ],
+  "category": "links",
+  "responseType": "free_text",
+  "canonicalAnswer": "https://noorulayn.dev",
+  "safeToAutoSubmit": true,
+  "requiresHumanConfirmation": false,
+  "source": "user_confirmed",
+  "usageCount": 0,
+  "createdAt": "2026-10-07T00:36:31.016Z",
+  "updatedAt": "2026-10-07T00:36:31.016Z"
+}

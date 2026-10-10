@@ -1,0 +1,40 @@
+{
+  "name": "jobby",
+  "version": "1.0.0",
+  "description": "Jobby - Autonomous Local-First Career Brain & Job Intelligence Agent",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "seed": "tsx src/cli/seed.ts",
+    "inspect": "tsx src/cli/inspect.ts",
+    "enrich": "tsx src/cli/enrich.ts",
+    "ui": "tsx src/cli/ui.ts",
+    "build": "tsc",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "career",
+    "profile",
+    "agent",
+    "job-applications"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.15.0",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.6",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.4",
+    "jsdom": "^30.1.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
