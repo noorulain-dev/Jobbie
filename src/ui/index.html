@@ -29,6 +29,8 @@
     <button class="tab-btn" onclick="switchTab('skills')">Skill Intelligence</button>
     <button class="tab-btn" onclick="switchTab('answers')">Application Answer Bank</button>
     <button class="tab-btn" onclick="switchTab('history')">Version History</button>
+    <button class="tab-btn" onclick="switchTab('sessions')">Application Sessions</button>
+    <button class="tab-btn" onclick="switchTab('tracker')">📊 Tracker</button>
   </nav>
 
   <main>
@@ -267,6 +269,68 @@
       </div>
     </section>
 
+    <!-- TAB 6: APPLICATION SESSIONS -->
+    <section id="tab-sessions" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>📋 Application Sessions</span>
+          <button class="btn btn-secondary" onclick="loadSessions()">🔄 Refresh</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Pages</th>
+                <th>Profile</th>
+                <th>Last Activity</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="sessionsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="session-detail" class="card" style="display:none;margin-top:12px">
+        <div class="card-title"><span>📋 Session Detail</span><button class="btn btn-secondary" onclick="closeSessionDetail()" style="float:right">✕ Close</button></div>
+        <div id="session-detail-content"></div>
+      </div>
+    </section>
+
+<!-- TAB 7: APPLICATION TRACKER -->
+    <section id="tab-tracker" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>📊 Application Tracker</span>
+          <button class="btn btn-primary btn-sm" onclick="exportTrackerCsv()" style="float:right;margin-left:8px">📥 Export CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadTracker()" style="float:right">🔄 Refresh</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <input class="form-control" id="tracker-search" placeholder="Search company or role..." style="flex:1;min-width:180px;font-size:12px;padding:4px 8px" oninput="filterTrackerRows()">
+          <select class="form-control" id="tracker-filter" style="width:140px;font-size:12px;padding:4px 8px" onchange="filterTrackerRows()">
+            <option value="">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="APPLIED">Applied</option>
+            <option value="INTERVIEWING">Interviewing</option>
+            <option value="OFFER">Offer</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="WITHDRAWN">Withdrawn</option>
+            <option value="ARCHIVED">Archived</option>
+          </select>
+          <label style="font-size:11px;white-space:nowrap"><input type="checkbox" id="tracker-show-archived" onchange="filterTrackerRows()"> Show archived</label>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead><tr>
+              <th>Company</th><th>Role</th><th>Status</th><th>Applied</th><th>Profile</th><th>Docs</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="trackerTableBody"><tr><td colspan="7" style="text-align:center;padding:16px;color:#6c757d">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
     </section>
   </main>
 

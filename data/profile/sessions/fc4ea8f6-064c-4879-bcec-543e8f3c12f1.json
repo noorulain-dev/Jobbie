@@ -1,0 +1,54 @@
+{
+  "id": "fc4ea8f6-064c-4879-bcec-543e8f3c12f1",
+  "jobId": "6410f5d3-3286-4a7d-b67a-57173e63faf6",
+  "status": "CANCELLED",
+  "sourceJobUrl": "https://www.linkedin.com/jobs/view/4471529251/",
+  "applicationUrl": "https://www.linkedin.com/jobs/view/4471529251",
+  "associatedPages": [
+    {
+      "url": "https://www.linkedin.com/jobs/view/4471529251/",
+      "pageType": "OTHER",
+      "attachedAt": "2026-10-14T00:51:46.234Z",
+      "title": "Founding GTM Engineer | Floqer | LinkedIn"
+    }
+  ],
+  "jobContextSnapshot": {
+    "companyName": "Unknown Company",
+    "roleTitle": "Founding GTM Engineer | Floqer | LinkedIn",
+    "originalSourceUrl": "https://www.linkedin.com/jobs/view/4471529251/",
+    "companyUrl": null,
+    "location": null,
+    "remoteStatus": "unknown",
+    "description": "No description content extracted.",
+    "responsibilities": [],
+    "requiredQualifications": [],
+    "preferredQualifications": [],
+    "requiredSkills": [],
+    "preferredSkills": [],
+    "technologies": [],
+    "salaryMin": null,
+    "salaryMax": null,
+    "salaryCurrency": "USD",
+    "salaryPeriod": "yearly",
+    "salaryText": null,
+    "employmentType": "full-time",
+    "seniority": "unknown",
+    "extractionTimestamp": "2026-10-13T22:15:33.551Z",
+    "extractionConfidence": 0.85,
+    "extractionWarnings": [
+      "Job description was incomplete or could not be cleanly extracted from page."
+    ],
+    "source": "linkedin",
+    "parserVersion": "1.0.0"
+  },
+  "jobContextOverrides": {
+    "trackerStatus": "DRAFT"
+  },
+  "selectedCareerProfileId": "software-engineering",
+  "selectedCareerProfileVersion": null,
+  "careerProfileSelectionSource": "auto",
+  "masterProfileVersion": 9,
+  "createdAt": "2026-10-13T22:15:33.611Z",
+  "updatedAt": "2026-10-14T00:59:30.105Z",
+  "lastActivityAt": "2026-10-14T00:59:30.105Z"
+}

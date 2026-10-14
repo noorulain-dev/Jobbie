@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Jobby - Application Session & Context",
+  "version": "1.0.0",
+  "description": "Start, track, and manage job application sessions across tabs.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:3141/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Jobby Session"
+  }
+}

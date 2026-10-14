@@ -1,0 +1,51 @@
+{
+  "id": "60cc2fd4-2b36-4678-83cf-2fcf23ebbfbc",
+  "jobId": null,
+  "status": "CANCELLED",
+  "sourceJobUrl": "https://example.com/jobs/lifecycle",
+  "applicationUrl": null,
+  "associatedPages": [
+    {
+      "url": "https://example.com/jobs/lifecycle",
+      "pageType": "JOB_POSTING",
+      "attachedAt": "2026-10-11T00:36:03.913Z",
+      "title": "Test Role"
+    }
+  ],
+  "jobContextSnapshot": {
+    "companyName": "Lifecycle Inc",
+    "roleTitle": "Test Role",
+    "originalSourceUrl": "https://example.com/jobs/lifecycle",
+    "companyUrl": null,
+    "location": null,
+    "remoteStatus": "unknown",
+    "description": "",
+    "responsibilities": [],
+    "requiredQualifications": [],
+    "preferredQualifications": [],
+    "requiredSkills": [],
+    "preferredSkills": [],
+    "technologies": [],
+    "salaryMin": null,
+    "salaryMax": null,
+    "salaryCurrency": null,
+    "salaryPeriod": null,
+    "salaryText": null,
+    "employmentType": "unknown",
+    "seniority": "unknown",
+    "extractionTimestamp": "2026-10-11T00:36:03.904Z",
+    "extractionConfidence": null,
+    "extractionWarnings": [
+      "Job context was manually supplied."
+    ],
+    "source": "manual",
+    "parserVersion": null
+  },
+  "jobContextOverrides": null,
+  "selectedCareerProfileId": "software-engineering",
+  "selectedCareerProfileVersion": null,
+  "masterProfileVersion": 1,
+  "createdAt": "2026-10-11T00:36:03.913Z",
+  "updatedAt": "2026-10-11T00:36:03.956Z",
+  "lastActivityAt": "2026-10-11T00:36:03.956Z"
+}

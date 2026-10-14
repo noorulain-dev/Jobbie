@@ -17,6 +17,14 @@ import { computeProfileDiff } from '../core/profile-differ.js';
 import { Job, JobSchema } from '../types/job.js';
 import { JobSnapshot, JobSnapshotSchema } from '../types/job-snapshot.js';
 import { JobDedupCluster, JobDedupClusterSchema } from '../types/job-dedup.js';
+import {
+  ApplicationSession,
+  ApplicationSessionSchema,
+  ApplicationSessionStatus,
+  isValidSessionTransition,
+  AssociatedPage,
+} from '../types/application-session.js';
+
 
 
 dotenv.config();
@@ -163,6 +171,28 @@ export class JobbyDatabase {
       CREATE INDEX IF NOT EXISTS idx_jobs_dedup_cluster ON jobs(dedup_cluster_id);
       CREATE INDEX IF NOT EXISTS idx_snapshots_job_id ON job_snapshots(job_id);
       CREATE INDEX IF NOT EXISTS idx_snapshots_hash ON job_snapshots(content_hash);
+
+      CREATE TABLE IF NOT EXISTS application_sessions (
+        id TEXT PRIMARY KEY,
+        job_id TEXT,
+        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        source_job_url TEXT NOT NULL,
+        application_url TEXT,
+        associated_pages_json TEXT NOT NULL DEFAULT '[]',
+        selected_career_profile_id TEXT,
+        selected_career_profile_version TEXT,
+        master_profile_version INTEGER,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_activity_at TEXT NOT NULL,
+        data_json TEXT NOT NULL,
+        FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sessions_job_id ON application_sessions(job_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_status ON application_sessions(status);
+      CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON application_sessions(last_activity_at);
+      CREATE INDEX IF NOT EXISTS idx_sessions_updated_at ON application_sessions(updated_at);
 
     `);
 
@@ -769,6 +799,170 @@ export class JobbyDatabase {
       updatedAt: row.updated_at,
     });
   }
+  // ==========================================
+  // APPLICATION SESSIONS
+  // ==========================================
+
+  public getSession(id: string): ApplicationSession | null {
+    const row = this.db.prepare('SELECT data_json FROM application_sessions WHERE id = ?').get(id) as { data_json: string } | undefined;
+    if (!row) return null;
+    return ApplicationSessionSchema.parse(JSON.parse(row.data_json));
+  }
+
+  public getActiveSession(): ApplicationSession | null {
+    const row = this.db.prepare("SELECT data_json FROM application_sessions WHERE status = 'ACTIVE' ORDER BY last_activity_at DESC LIMIT 1").get() as { data_json: string } | undefined;
+    if (!row) return null;
+    return ApplicationSessionSchema.parse(JSON.parse(row.data_json));
+  }
+
+  public listSessions(filter?: { status?: ApplicationSessionStatus; jobId?: string }): ApplicationSession[] {
+    let query = 'SELECT data_json FROM application_sessions';
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (filter?.status) {
+      conditions.push('status = ?');
+      params.push(filter.status);
+    }
+    if (filter?.jobId) {
+      conditions.push('job_id = ?');
+      params.push(filter.jobId);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+    query += ' ORDER BY last_activity_at DESC';
+
+    const rows = this.db.prepare(query).all(...params) as { data_json: string }[];
+    return rows.map((r) => ApplicationSessionSchema.parse(JSON.parse(r.data_json)));
+  }
+
+  public saveSession(session: ApplicationSession): void {
+    const validated = ApplicationSessionSchema.parse(session);
+
+    // If session already exists in database, validate status transition
+    const existing = this.getSession(validated.id);
+    if (existing && existing.status !== validated.status) {
+      if (!isValidSessionTransition(existing.status, validated.status)) {
+        throw new Error(
+          `Invalid session transition from '${existing.status}' to '${validated.status}'. ` +
+          `Terminal sessions cannot resume; valid transitions are ACTIVE <-> PAUSED, or transition to COMPLETED/CANCELLED.`
+        );
+      }
+    }
+
+    this.db.prepare(`
+      INSERT INTO application_sessions (
+        id,
+        job_id,
+        status,
+        source_job_url,
+        application_url,
+        associated_pages_json,
+        selected_career_profile_id,
+        selected_career_profile_version,
+        master_profile_version,
+        created_at,
+        updated_at,
+        last_activity_at,
+        data_json
+      )
+      VALUES (
+        @id,
+        @job_id,
+        @status,
+        @source_job_url,
+        @application_url,
+        @associated_pages_json,
+        @selected_career_profile_id,
+        @selected_career_profile_version,
+        @master_profile_version,
+        @created_at,
+        @updated_at,
+        @last_activity_at,
+        @data_json
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        job_id = excluded.job_id,
+        status = excluded.status,
+        source_job_url = excluded.source_job_url,
+        application_url = excluded.application_url,
+        associated_pages_json = excluded.associated_pages_json,
+        selected_career_profile_id = excluded.selected_career_profile_id,
+        selected_career_profile_version = excluded.selected_career_profile_version,
+        master_profile_version = excluded.master_profile_version,
+        updated_at = excluded.updated_at,
+        last_activity_at = excluded.last_activity_at,
+        data_json = excluded.data_json
+    `).run({
+      id: validated.id,
+      job_id: validated.jobId,
+      status: validated.status,
+      source_job_url: validated.sourceJobUrl,
+      application_url: validated.applicationUrl,
+      associated_pages_json: JSON.stringify(validated.associatedPages),
+      selected_career_profile_id: validated.selectedCareerProfileId,
+      selected_career_profile_version: validated.selectedCareerProfileVersion,
+      master_profile_version: validated.masterProfileVersion,
+      created_at: validated.createdAt,
+      updated_at: validated.updatedAt,
+      last_activity_at: validated.lastActivityAt,
+      data_json: JSON.stringify(validated, null, 2),
+    });
+  }
+  public updateSessionStatus(id: string, newStatus: ApplicationSessionStatus): ApplicationSession {
+    const session = this.getSession(id);
+    if (!session) {
+      throw new Error(`Application session '${id}' not found.`);
+    }
+
+    if (!isValidSessionTransition(session.status, newStatus)) {
+      throw new Error(
+        `Invalid session transition from '${session.status}' to '${newStatus}'. ` +
+        `Terminal sessions cannot resume; valid transitions are ACTIVE <-> PAUSED, or transition to COMPLETED/CANCELLED.`
+      );
+    }
+
+    const now = new Date().toISOString();
+    const updated: ApplicationSession = {
+      ...session,
+      status: newStatus,
+      updatedAt: now,
+      lastActivityAt: now,
+    };
+
+    this.saveSession(updated);
+    return updated;
+  }
+
+  public attachPageToSession(id: string, page: AssociatedPage): ApplicationSession {
+    const session = this.getSession(id);
+    if (!session) {
+      throw new Error(`Application session '${id}' not found.`);
+    }
+
+    if (session.status === 'COMPLETED' || session.status === 'CANCELLED') {
+      throw new Error(`Cannot attach page to session in terminal status '${session.status}'.`);
+    }
+
+    const existingPages = session.associatedPages.filter((p) => p.url !== page.url);
+    const updatedPages = [...existingPages, page];
+    const now = new Date().toISOString();
+
+    const updated: ApplicationSession = {
+      ...session,
+      associatedPages: updatedPages,
+      applicationUrl: page.pageType === 'APPLICATION_PAGE' ? page.url : session.applicationUrl,
+      updatedAt: now,
+      lastActivityAt: now,
+    };
+
+    this.saveSession(updated);
+    return updated;
+  }
+
+
 
 
 

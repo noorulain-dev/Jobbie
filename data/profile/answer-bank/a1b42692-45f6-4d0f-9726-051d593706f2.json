@@ -7,11 +7,11 @@
   ],
   "category": "experience_years",
   "responseType": "numeric",
-  "canonicalAnswer": "2+",
+  "canonicalAnswer": "3+",
   "safeToAutoSubmit": true,
   "requiresHumanConfirmation": false,
   "source": "user_confirmed",
   "usageCount": 0,
   "createdAt": "2026-10-07T00:36:31.012Z",
-  "updatedAt": "2026-10-07T00:36:31.012Z"
+  "updatedAt": "2026-10-13T21:32:39.940Z"
 }

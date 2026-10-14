@@ -28,13 +28,19 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   
-  const tabIdx = ['master', 'career', 'skills', 'answers', 'history'].indexOf(tabName);
+  var tabIdx = ['master', 'career', 'skills', 'answers', 'history', 'sessions', 'tracker'].indexOf(tabName);
   if (tabIdx >= 0) {
     document.querySelectorAll('.tab-btn')[tabIdx].classList.add('active');
   }
   document.getElementById('tab-' + tabName).classList.add('active');
   if (tabName === 'history') {
     loadHistory();
+  }
+  if (tabName === 'sessions') {
+    loadSessions();
+  }
+  if (tabName === 'tracker') {
+    loadTracker();
   }
 }
 
@@ -585,8 +591,431 @@ async function rollbackVersion(historyId, versionNum) {
 }
 
 
+// 7. APPLICATION SESSIONS
+async function loadSessions() {
+  const res = await fetch('/api/sessions');
+  if (!res.ok) return;
+  const sessions = await res.json();
+  renderSessionsTable(sessions);
+}
+
+function renderSessionsTable(sessions) {
+  const tbody = document.getElementById('sessionsTableBody');
+  if (!tbody) return;
+  if (!sessions || sessions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6c757d">No application sessions yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = sessions.map(function(s) {
+    var ss = s.jobContextSnapshot;
+    return '<tr>' +
+      '<td>' + escHtml(ss.companyName) + '</td>' +
+      '<td>' + escHtml(ss.roleTitle) + '</td>' +
+      '<td><span class="status-badge status-' + s.status.toLowerCase() + '">' + s.status + '</span></td>' +
+      '<td>' + (s.associatedPages ? s.associatedPages.length : 0) + '</td>' +
+      '<td>' + escHtml(s.selectedCareerProfileId || 'auto') + '</td>' +
+      '<td>' + escHtml((s.lastActivityAt || '').slice(0, 10)) + '</td>' +
+      '<td>' +
+        (s.status === 'PAUSED' ? '<button class="btn btn-success btn-sm" onclick="sessionAction(\'' + s.id + '\',\'resume\')">Resume</button> ' : '') +
+        (s.status === 'ACTIVE' ? '<button class="btn btn-warning btn-sm" onclick="sessionAction(\'' + s.id + '\',\'pause\')">Pause</button> ' : '') +
+        ((s.status === 'ACTIVE' || s.status === 'PAUSED') ? '<button class="btn btn-danger btn-sm" onclick="sessionAction(\'' + s.id + '\',\'cancel\')">Cancel</button>' : '') +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function sessionAction(id, action) {
+  var statusMap = { resume: 'ACTIVE', pause: 'PAUSED', cancel: 'CANCELLED' };
+  var res = await fetch('/api/sessions/' + id + '/status', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: statusMap[action] })
+  });
+  if (res.ok) { loadSessions(); showToast('Session ' + action + 'd'); }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+var currentViewSessionId = null;
+
+async function viewSession(id) {
+  currentViewSessionId = id;
+  document.getElementById('session-detail').style.display = 'block';
+  var content = document.getElementById('session-detail-content');
+  content.innerHTML = '<div style="padding:12px;color:#6c757d">Loading...</div>';
+  var ctxRes = await fetch('/api/sessions/' + id + '/effective-context');
+  var profRes = await fetch('/api/career-profiles');
+  var ctx = await ctxRes.json();
+  var profiles = await profRes.json();
+  var sessRes = await fetch('/api/sessions/' + id);
+  var session = await sessRes.json();
+  if (!session || !session.id) { content.innerHTML = '<div class="warning">Session not found.</div>'; return; }
+  renderSessionDetail(session, ctx, profiles);
+}
+
+function renderSessionDetail(session, ctx, profiles) {
+  var content = document.getElementById('session-detail-content');
+  var f = ctx.fields || {};
+  var ss = session.jobContextSnapshot || {};
+  function srcBadge(src) {
+    if (src === 'extracted') return '<span style="background:#d4edda;color:#155724;padding:1px 6px;border-radius:3px;font-size:11px">extracted</span>';
+    if (src === 'corrected') return '<span style="background:#fff3cd;color:#856404;padding:1px 6px;border-radius:3px;font-size:11px">corrected</span>';
+    if (src === 'supplied') return '<span style="background:#cce5ff;color:#004085;padding:1px 6px;border-radius:3px;font-size:11px">supplied</span>';
+    return '';
+  }
+  function fRow(label, val, src) {
+    var v = val;
+    if (Array.isArray(v)) v = v.length ? v.join(', ') : '<em>none</em>';
+    if (v === null || v === undefined || v === '') v = '<em style="color:#6c757d">missing</em>';
+    return '<tr><td style="font-weight:600;white-space:nowrap;vertical-align:top;padding-right:8px">' + label + '</td><td>' + v + '</td><td style="white-space:nowrap">' + (src ? srcBadge(src) : '') + '</td></tr>';
+  }
+  var pfOpts = (profiles || []).map(function(p) {
+    var sel = p.id === session.selectedCareerProfileId ? ' selected' : '';
+    return '<option value="' + p.id + '"' + sel + '>' + escHtml(p.name || p.id) + ' (' + p.track + ')</option>';
+  }).join('');
+  var selSrc = session.careerProfileSelectionSource === 'auto' ? ' (automatic)' : session.careerProfileSelectionSource === 'manual' ? ' (manual)' : '';
+  content.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h3 style="margin-bottom:6px">Context Review</h3><table style="width:100%;font-size:12px">' +
+      fRow('Company', ss.companyName, (f['companyName']||{}).source||'extracted') +
+      fRow('Role Title', ss.roleTitle, (f['roleTitle']||{}).source||'extracted') +
+      fRow('Location', ss.location||'<em>missing</em>', (f['location']||{}).source||'extracted') +
+      fRow('Remote Status', ss.remoteStatus||'<em>missing</em>', (f['remoteStatus']||{}).source||'extracted') +
+      fRow('Source URL', '<a href=\"' + escHtml(session.sourceJobUrl) + '\" target=\"_blank\" rel=\"noopener\">' + escHtml(session.sourceJobUrl) + '</a>', 'extracted') +
+      (session.applicationUrl ? fRow('Application URL', '<a href=\"' + escHtml(session.applicationUrl) + '\" target=\"_blank\" rel=\"noopener\">' + escHtml(session.applicationUrl) + '</a>', 'extracted') : fRow('Application URL', '<em>not attached</em>', 'extracted')) +
+      fRow('Capture Time', (ss.extractionTimestamp||'').slice(0,19), 'extracted') +
+      fRow('Description', ss.description||'<em>missing</em>', (f['description']||{}).source||'extracted') +
+      fRow('Responsibilities', ss.responsibilities||[], (f['responsibilities']||{}).source||'extracted') +
+      fRow('Required Quals', ss.requiredQualifications||[], (f['requiredQualifications']||{}).source||'extracted') +
+      fRow('Required Skills', ss.requiredSkills||[], (f['requiredSkills']||{}).source||'extracted') +
+      fRow('Preferred Skills', ss.preferredSkills||[], (f['preferredSkills']||{}).source||'extracted') +
+      fRow('Technologies', ss.technologies||[], (f['technologies']||{}).source||'extracted') +
+      fRow('Employment', ss.employmentType||'<em>missing</em>', (f['employmentType']||{}).source||'extracted') +
+      fRow('Seniority', ss.seniority||'<em>missing</em>', (f['seniority']||{}).source||'extracted') +
+      (ss.extractionWarnings&&ss.extractionWarnings.length ? fRow('Warnings', ss.extractionWarnings.join('; '), 'extracted') : '') +
+    '</table>' +
+    (ss.description ? '' : '<div class="warning" style="margin-top:8px">Job description is absent. Job-specific document tailoring may be less accurate.</div>') +
+    '<div style="margin-top:12px"><a href="' + escHtml(session.sourceJobUrl) + '" target="_blank" rel="noopener" class="btn btn-secondary">Open Original Posting</a></div>' +
+    '</div>' +
+    '<div class="form-group"><label>Company</label><input class="form-control" id="edit-company" value="' + escHtml(((f['companyName']||{}).value!==undefined?(f['companyName']||{}).value:ss.companyName||'')) + '"></div>' +
+      '<div class="form-group"><label>Role Title</label><input class="form-control" id="edit-title" value="' + escHtml(((f['roleTitle']||{}).value!==undefined?(f['roleTitle']||{}).value:ss.roleTitle||'')) + '"></div>' +
+      '<div class="form-group"><label>Location</label><input class="form-control" id="edit-location" value="' + escHtml(((f['location']||{}).value!==undefined?(f['location']||{}).value:ss.location||'')) + '"></div>' +
+      '<div class="form-group"><label>Required Skills (comma-separated)</label><input class="form-control" id="edit-reqskills" value="' + escHtml((Array.isArray((f['requiredSkills']||{}).value)?(f['requiredSkills']||{}).value.join(', '):(ss.requiredSkills||[]).join(', '))) + '"></div>' +
+      '<div class="form-group"><label>Preferred Skills (comma-separated)</label><input class="form-control" id="edit-prefskills" value="' + escHtml((Array.isArray((f['preferredSkills']||{}).value)?(f['preferredSkills']||{}).value.join(', '):(ss.preferredSkills||[]).join(', '))) + '"></div>' +
+      '<div class="form-group"><label>Notes</label><input class="form-control" id="edit-notes" value="' + escHtml((session.jobContextOverrides||{}).notes||'') + '"></div>' +
+      '<button class="btn btn-primary" onclick="saveManualRecovery()" style="margin-top:8px">Save Corrections</button><hr>' +
+      '<h3 style="margin-bottom:6px">Career Profile</h3><div style="font-size:11px;color:#6c757d;margin-bottom:4px">Selected: <strong>' + escHtml(session.selectedCareerProfileId||'auto') + '</strong>' + selSrc + '</div>' +
+      '<select class="form-control" id="edit-career-profile">' + pfOpts + '</select>' +
+      '<button class="btn btn-primary" onclick="saveCareerProfile()" style="margin-top:8px">Update Career Profile</button>' +
+    '</div></div>' +
+    // ── DOCUMENTS SECTION ──
+    '<div id="docs-section" style="margin-top:12px;border-top:1px solid #e9ecef;padding-top:12px">' +
+      '<h3 style="margin-bottom:8px">📄 Documents</h3>' +
+      '<div id="docs-actions" style="margin-bottom:10px">' +
+        '<button class="btn btn-primary btn-sm" id="btn-gen-resume" onclick="generateResume()">📝 Generate Resume</button> ' +
+        '<button class="btn btn-primary btn-sm" id="btn-gen-cover" onclick="generateCoverLetter()">✉️ Generate Cover Letter</button> ' +
+        '<button class="btn btn-secondary btn-sm" onclick="loadDocuments()">🔄 Refresh</button>' +
+      '</div>' +
+      '<div id="docs-list" style="font-size:12px">Loading documents...</div>' +
+      '<div id="docs-revise" style="display:none;margin-top:10px;padding:8px;background:#f8f9fa;border-radius:4px">' +
+        '<div style="font-weight:600;margin-bottom:4px">Revise: <span id="docs-revise-label"></span></div>' +
+        '<input class="form-control" id="docs-revise-input" placeholder="Describe the change you want (e.g. Make it shorter, or Focus more on backend)" style="margin-bottom:4px;font-size:12px">' +
+        '<button class="btn btn-primary btn-sm" onclick="submitRevision()">Submit Revision</button> ' +
+        '<button class="btn btn-secondary btn-sm" onclick="cancelRevision()">Cancel</button> ' +
+        '<span id="docs-revise-status" style="margin-left:8px;font-size:11px;color:#6c757d"></span>' +
+      '</div>' +
+    '</div>';
+}
+
+async function saveManualRecovery() {
+  if (!currentViewSessionId) return;
+  var body = {};
+  var v = document.getElementById('edit-company'); if (v) body.companyName = v.value || undefined;
+  v = document.getElementById('edit-title'); if (v) body.roleTitle = v.value || undefined;
+  v = document.getElementById('edit-location'); if (v) body.location = v.value || undefined;
+  v = document.getElementById('edit-desc'); if (v) body.description = v.value || undefined;
+  v = document.getElementById('edit-reqskills'); if (v) body.requiredSkills = v.value ? v.value.split(',').map(function(s){return s.trim()}).filter(Boolean) : undefined;
+  v = document.getElementById('edit-prefskills'); if (v) body.preferredSkills = v.value ? v.value.split(',').map(function(s){return s.trim()}).filter(Boolean) : undefined;
+  v = document.getElementById('edit-notes'); if (v) body.notes = v.value || undefined;
+  var res = await fetch('/api/sessions/' + currentViewSessionId + '/context', { method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if (res.ok) { showToast('Corrections saved'); viewSession(currentViewSessionId); }
+}
+
+async function saveCareerProfile() {
+  if (!currentViewSessionId) return;
+  var profileId = document.getElementById('edit-career-profile').value;
+  var res = await fetch('/api/sessions/' + currentViewSessionId + '/career-profile', { method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({careerProfileId:profileId,selectionSource:'manual'})});
+  if (res.ok) { showToast('Career profile updated'); viewSession(currentViewSessionId); }
+}
+var currentReviseArtifactId = null;
+
+async function loadDocuments() {
+  if (!currentViewSessionId) return;
+  var list = document.getElementById('docs-list');
+  if (!list) return;
+  list.innerHTML = '<span style=\"color:#6c757d\">Loading...</span>';
+  var res = await fetch('/api/sessions/' + currentViewSessionId + '/documents');
+  if (!res.ok) { list.innerHTML = '<span style=\"color:#e63946\">Failed to load.</span>'; return; }
+  var docs = await res.json();
+  renderDocumentList(docs);
+}
+
+function renderDocumentList(docs) {
+  var list = document.getElementById('docs-list');
+  if (!list) return;
+  if (!docs || docs.length === 0) {
+    list.innerHTML = '<div style=\"color:#6c757d;padding:8px 0\">No documents yet. Click Generate above.</div>';
+    return;
+  }
+  var resumes = docs.filter(function(d){return d.documentType==='RESUME';});
+  var letters = docs.filter(function(d){return d.documentType==='COVER_LETTER';});
+
+  function statusBadge(s) {
+    var c = s==='PDF_COMPILED'?'#155724':'#721c24', bg = s==='PDF_COMPILED'?'#d4edda':'#f8d7da';
+    return '<span style=\"background:'+bg+';color:'+c+';padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600\">'+s+'</span>';
+  }
+
+  function docCard(ds, label) {
+    if (!ds.length) return '<div style=\"margin-bottom:6px\"><strong>'+label+'</strong>: <span style=\"color:#6c757d\">none</span></div>';
+    var h = '<div style=\"margin-bottom:8px\"><strong>'+label+'</strong></div>';
+    for (var i=0;i<ds.length;i++) {
+      var d=ds[i], latest=i===0;
+      h += '<div style=\"padding:6px 8px;margin-bottom:4px;background:'+(latest?'#f0f4ff':'#fff')+';border:1px solid '+(latest?'#4361ee':'#e9ecef')+';border-radius:4px\">';
+      h += '<div style=\"display:flex;justify-content:space-between;align-items:center\">';
+      h += '<span><strong>v'+d.version+'</strong> '+statusBadge(d.status)+(latest&&d.status==='PDF_COMPILED'?' <span style=\"font-size:10px;color:#4361ee\">current</span>':'')+'</span>';
+      h += '<span style=\"font-size:10px;color:#6c757d\">'+(d.createdAt||'').slice(0,16).replace('T',' ')+'</span></div>';
+      if (d.revisionReason) h += '<div style=\"font-size:10px;color:#6c757d;margin-top:2px\"><em>'+escHtml((d.revisionReason||'').length>80?d.revisionReason.slice(0,80)+'...':d.revisionReason)+'</em></div>';
+      if (d.errorMessage) h += '<div style=\"font-size:10px;color:#e63946;margin-top:2px\">'+escHtml(d.errorMessage)+'</div>';
+      h += '<div style=\"margin-top:4px\">';
+      if (d.pdfAvailable) h += '<button class=\"btn btn-success btn-sm\" style=\"font-size:10px;padding:2px 8px\" onclick=\"openPdf('+d.artifactId+')\">📄 Open PDF</button> ';
+      h += '<button class=\"btn btn-secondary btn-sm\" style=\"font-size:10px;padding:2px 8px\" onclick=\"openTex('+d.artifactId+')\">📝 View .tex</button> ';
+      if (d.status==='PDF_COMPILED') h += '<button class=\"btn btn-warning btn-sm\" style=\"font-size:10px;padding:2px 8px\" onclick=\"startRevision(\x27'+d.artifactId+'\x27,\x27v'+d.version+'\x27)\">✏️ Revise</button>';
+      h += '</div></div>';
+
+  // Trigger document loading after render
+  setTimeout(function() { loadDocuments(); }, 100);
+    }
+    return h;
+  }
+  list.innerHTML = docCard(resumes,'📝 Resume') + '<hr style=\"margin:8px 0\">' + docCard(letters,'✉️ Cover Letter');
+}
+
+function closeSessionDetail() {
+  document.getElementById('session-detail').style.display = 'none';
+  currentViewSessionId = null;
+}
+
 window.addEventListener('DOMContentLoaded', init);
 
 
 
+var isDocGenerating = false;
+
+async function generateResume() {
+  if (!currentViewSessionId || isDocGenerating) return;
+  isDocGenerating = true;
+  setGenButtons(true);
+  showToast('Generating resume — this may take 30-60 seconds...');
+  try {
+    var res = await fetch('/api/sessions/' + currentViewSessionId + '/generate-resume', { method:'POST' });
+    var data = await res.json();
+    if (data.success) { showToast('Resume v'+data.artifact.version+' generated!'); loadDocuments(); }
+    else {
+      var msg = data.errorMessage || 'Unknown error';
+      if (msg.indexOf('pdflatex') !== -1) showToast('PDF compiler not found. Install TeX Live or MiKTeX to generate PDFs.');
+      else if (msg.indexOf('OpenRouter') !== -1) showToast('OpenRouter unavailable. Check your API key in .env and internet connection.');
+      else showToast('Resume generation failed: ' + msg);
+    }
+  } catch(e) { showToast('Backend unreachable. Is Jobby running at http://127.0.0.1:3141?'); }
+  isDocGenerating = false;
+  setGenButtons(false);
+}
+
+async function generateCoverLetter() {
+  if (!currentViewSessionId || isDocGenerating) return;
+  isDocGenerating = true;
+  setGenButtons(true);
+  showToast('Generating cover letter...');
+  try {
+    var res = await fetch('/api/sessions/' + currentViewSessionId + '/generate-cover-letter', { method:'POST' });
+    var data = await res.json();
+    if (data.success) { showToast('Cover letter v'+data.artifact.version+' generated!'); loadDocuments(); }
+    else {
+      var msg = data.errorMessage || 'Unknown error';
+      if (msg.indexOf('OpenRouter') !== -1) showToast('OpenRouter unavailable. Check your API key in .env and internet connection.');
+      else if (msg.indexOf('No company or role') !== -1) showToast('Missing job context. Attach a job posting to this session first.');
+      else showToast('Cover letter generation failed: ' + msg);
+    }
+  } catch(e) { showToast('Backend unreachable. Is Jobby running at http://127.0.0.1:3141?'); }
+  isDocGenerating = false;
+  setGenButtons(false);
+}
+
+function setGenButtons(disabled) {
+  var b1 = document.getElementById('btn-gen-resume'), b2 = document.getElementById('btn-gen-cover');
+  if (b1) { b1.disabled = disabled; b1.textContent = disabled ? '⏳ Generating...' : '📝 Generate Resume'; }
+  if (b2) { b2.disabled = disabled; b2.textContent = disabled ? '⏳ Generating...' : '✉️ Generate Cover Letter'; }
+}
+
+async function openPdf(artifactId) {
+  window.open('/api/documents/' + artifactId + '/pdf', '_blank');
+}
+
+async function openTex(artifactId) {
+  window.open('/api/documents/' + artifactId + '/tex', '_blank');
+}
+
+function startRevision(artifactId, label) {
+  currentReviseArtifactId = artifactId;
+  document.getElementById('docs-revise').style.display = 'block';
+  document.getElementById('docs-revise-label').textContent = label;
+  document.getElementById('docs-revise-input').value = '';
+  document.getElementById('docs-revise-status').textContent = '';
+}
+
+function cancelRevision() { currentReviseArtifactId = null; document.getElementById('docs-revise').style.display = 'none'; }
+
+async function submitRevision() {
+  if (!currentReviseArtifactId || isDocGenerating) return;
+  var input = document.getElementById('docs-revise-input');
+  var instructions = input.value.trim();
+  if (!instructions) { showToast('Enter revision instructions first.'); return; }
+  isDocGenerating = true;
+  var status = document.getElementById('docs-revise-status');
+  status.textContent = 'Submitting...';
+  try {
+    var res = await fetch('/api/documents/' + currentReviseArtifactId + '/revise', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({instructions:instructions})
+    });
+    var data = await res.json();
+    if (data.success) { showToast('Revision v'+data.artifact.version+' created!'); cancelRevision(); loadDocuments(); }
+    else {
+      var msg = data.errorMessage || 'Unknown error';
+      if (msg.indexOf('pdflatex') !== -1) status.textContent = 'Compiler not found. Install TeX Live or MiKTeX.';
+      else if (msg.indexOf('OpenRouter') !== -1) status.textContent = 'OpenRouter unavailable. Check API key.';
+      else status.textContent = 'Failed: ' + msg;
+    }
+  } catch(e) { status.textContent = 'Backend unreachable.'; }
+  isDocGenerating = false;
+}
+// ═══════════════════════════════════════════════
+// 8. APPLICATION TRACKER
+// ═══════════════════════════════════════════════
+// 8. APPLICATION TRACKER
+// ═══════════════════════════════════════════════
+
+var trackerData = [];
+
+async function loadTracker() {
+  var tbody = document.getElementById('trackerTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;padding:16px;color:#6c757d\">Loading...</td></tr>';
+  var res = await fetch('/api/tracker');
+  if (!res.ok) { tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;padding:16px;color:#e63946\">Failed to load.</td></tr>'; return; }
+  trackerData = await res.json();
+  renderTrackerTable(trackerData);
+}
+
+function filterTrackerRows() {
+  var search = (document.getElementById('tracker-search')?.value || '').toLowerCase();
+  var filter = document.getElementById('tracker-filter')?.value || '';
+  var showArchived = document.getElementById('tracker-show-archived')?.checked || false;
+  var filtered = trackerData.filter(function(e) {
+    if (search && (e.company + ' ' + e.role).toLowerCase().indexOf(search) === -1) return false;
+    if (filter && e.trackerStatus !== filter) return false;
+    if (!showArchived && e.trackerStatus === 'ARCHIVED') return false;
+    return true;
+  });
+  renderTrackerTable(filtered);
+}
+function renderTrackerTable(entries) {
+  var tbody = document.getElementById('trackerTableBody');
+  if (!tbody) return;
+  if (!trackerData || trackerData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;padding:24px;color:#6c757d\"><div>No applications tracked yet</div><div style=\"font-size:11px;margin-top:4px\">Start an application from a job posting to begin.</div></td></tr>';
+    return;
+  }
+  if (!entries || entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center;padding:16px;color:#6c757d\">No applications match your search or filter.</td></tr>';
+    return;
+  }
+
+  var STATI = ['DRAFT','APPLIED','INTERVIEWING','OFFER','REJECTED','WITHDRAWN','ARCHIVED'];
+
+  tbody.innerHTML = entries.map(function(e) {
+    var srcLink = e.sourceUrl ? ' <a href=\"'+escHtml(e.sourceUrl)+'\" target=\"_blank\">🔗</a>' : '';
+    var appLink = e.applicationUrl ? ' <a href=\"'+escHtml(e.applicationUrl)+'\" target=\"_blank\">📝</a>' : '';
+
+    var docs = '';
+    if (e.resumePdfAvailable) docs += '<a href=\"/api/documents/'+e.resumeArtifactId+'/pdf\" target=\"_blank\" title=\"Resume\">📄</a> ';
+    else docs += '<span style=\"color:#adb5bd\">📄</span> ';
+    if (e.coverLetterPdfAvailable) docs += '<a href=\"/api/documents/'+e.coverLetterArtifactId+'/pdf\" target=\"_blank\" title=\"Cover\">✉️</a>';
+    else docs += '<span style=\"color:#adb5bd\">✉️</span>';
+
+    var profile = e.careerProfileName ? '<span style=\"font-size:10px;color:#6c757d\">'+escHtml(e.careerProfileName)+'</span>' : '<span style=\"color:#adb5bd\">—</span>';
+
+    var statusSelect = '<select onchange=\"updateTrackerStatus(\x27'+e.sessionId+'\x27,this.value)\" style=\"font-size:10px;padding:2px 4px\">'+
+      STATI.map(function(s){return '<option value=\"'+s+'\"'+(e.trackerStatus===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select>';
+
+    var actions = '<button class=\"btn btn-secondary btn-sm\" style=\"font-size:10px;padding:2px 4px\" onclick=\"openSessionFromTracker(\x27'+e.sessionId+'\x27)\" title=\"View session\">📋</button> ';
+    if (e.trackerStatus === 'DRAFT') actions += '<button class=\"btn btn-success btn-sm\" style=\"font-size:10px;padding:2px 4px\" onclick=\"markApplied(\x27'+e.sessionId+'\x27)\" title=\"Mark Applied\">✅</button> ';
+    actions += '<button class=\"btn btn-secondary btn-sm\" style=\"font-size:10px;padding:2px 4px\" onclick=\"editTrackerNotes(\x27'+e.sessionId+'\x27)\" title=\"Notes\">📝</button>';
+
+    return '<tr>'+
+      '<td style=\"font-size:11px\">'+escHtml(e.company)+srcLink+'</td>'+
+      '<td style=\"font-size:11px\">'+escHtml(e.role)+appLink+'</td>'+
+      '<td>'+statusSelect+'</td>'+
+      '<td style=\"font-size:11px\">'+(e.dateApplied||'—')+'</td>'+
+      '<td>'+profile+'</td>'+
+      '<td style=\"font-size:14px\">'+docs+'</td>'+
+      '<td>'+actions+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function openSessionFromTracker(sessionId) {
+  switchTab('sessions');
+  setTimeout(function() { viewSession(sessionId); }, 300);
+}
+
+async function updateTrackerStatus(sessionId, newStatus) {
+  if (newStatus === 'APPLIED') {
+    if (!confirm('Mark as submitted? This records today as the date.')) { loadTracker(); return; }
+    var res = await fetch('/api/tracker/' + sessionId + '/mark-applied', { method:'PUT', headers:{'Content-Type':'application/json'}, body:'{}' });
+  } else {
+    var res = await fetch('/api/tracker/' + sessionId + '/status', {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:newStatus})
+    });
+  }
+  if (res.ok) { showToast('Status updated'); loadTracker(); }
+  else { var data = await res.json(); showToast('Error: '+(data.error||'Unknown')); loadTracker(); }
+}
+
+async function markApplied(sessionId) {
+  if (!confirm('Have you submitted this application? This marks it as APPLIED with today as the date.')) return;
+  var res = await fetch('/api/tracker/' + sessionId + '/mark-applied', { method:'PUT', headers:{'Content-Type':'application/json'}, body:'{}' });
+  if (res.ok) { showToast('Marked as APPLIED'); loadTracker(); }
+  else { var data = await res.json(); showToast('Error: '+(data.error||'Unknown')); }
+}
+
+function editTrackerNotes(sessionId) {
+  var entry = trackerData.find(function(e){return e.sessionId===sessionId;});
+  var currentNotes = entry ? (entry.notes||'') : '';
+  var notes = prompt('Edit notes:', currentNotes);
+  if (notes === null) return;
+  fetch('/api/tracker/' + sessionId + '/notes', {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({notes:notes})
+  }).then(function(res){ return res.json(); }).then(function(data){
+    if (data.trackerStatus) { showToast('Notes saved'); loadTracker(); }
+    else showToast('Error: '+(data.error||'Unknown')); loadTracker();
+  });
+}
+function exportTrackerCsv() {
+  // Downloads the complete tracker as CSV (all entries, unfiltered)
+  window.open('/api/tracker/export', '_blank');
+}
+
+window.addEventListener('DOMContentLoaded', init);
 

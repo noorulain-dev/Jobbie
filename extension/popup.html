@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width:380px; margin:0; padding:16px; font-family:-apple-system,BlinkMacSystemFont,sans-serif; font-size:13px; color:#1a1a2e; }
+    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .title { font-weight:700; font-size:15px; }
+    .dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px; background:#e63946; }
+    .card { background:#f8f9fa; border-radius:8px; padding:12px; margin-bottom:10px; }
+    .btn { display:block; width:100%; padding:10px; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; margin-bottom:8px; text-align:center; text-decoration:none; }
+    .btn-primary { background:#4361ee; color:#fff; }
+    .btn-success { background:#2d6a4f; color:#fff; }
+    .btn-danger { background:#e63946; color:#fff; }
+    .btn-outline { background:#fff; color:#4361ee; border:1px solid #4361ee; }
+    .btn:disabled { opacity:0.5; cursor:default; }
+    .status { padding:8px; border-radius:6px; margin-top:8px; font-size:12px; }
+    .info { background:#e3f2fd; color:#1565c0; }
+    .success { background:#d4edda; color:#155724; }
+    .warning { background:#fff3cd; color:#856404; }
+    .error { background:#f8d7da; color:#721c24; }
+    .badge { font-size:11px; padding:2px 6px; border-radius:4px; font-weight:600; }
+    .badge-active { background:#d4edda; color:#155724; }
+    .small { font-size:11px; color:#6c757d; margin-top:4px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="title">Jobby</span>
+    <span><span class="dot" id="conn-dot"></span><span id="conn-text" style="font-size:11px">Connecting...</span></span>
+  </div>
+  <div class="card" id="session-card" style="display:none"><div style="font-weight:700;font-size:14px" id="session-title"></div><div class="small" id="session-sub"></div></div>
+  <div id="action-area"><button class="btn btn-primary" id="btn-toggle">Start Application</button></div>
+  <div id="extra-actions" style="display:none"><button class="btn btn-outline" id="btn-scan">Scan This Page</button><button class="btn btn-success" id="btn-fill">Fill Form</button><button class="btn btn-primary" id="btn-gen-resume">Generate Resume</button><button class="btn btn-primary" id="btn-gen-cover">Generate Cover Letter</button></div>
+  <div id="status-area"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

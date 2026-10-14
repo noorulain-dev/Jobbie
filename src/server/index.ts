@@ -9,6 +9,16 @@ import { SavedAnswerItemSchema } from '../types/answer-bank.js';
 import { SkillIntelligenceService } from '../core/skill-intelligence.js';
 import { sanitizeProfileForExport } from '../core/profile-sanitizer.js';
 import { seedInitialAnswerBank } from '../core/answer-bank-seed.js';
+import { ApplicationSessionService } from '../core/session-service.js';
+import { JobPageDetector } from '../extractor/page-detector.js';
+import { ContentExtractor } from '../extractor/content-extractor.js';
+import { parseHtmlToDocument } from '../extractor/sources/base-source.js';
+import { ResumeGenerator } from '../core/resume-generator.js';
+import { TrackerService } from '../core/tracker-service.js';
+import { CoverLetterGenerator } from '../core/cover-letter-generator.js';
+import { detectCompiler } from '../core/pdf-compiler.js';
+import { DocumentStore } from '../core/document-store.js';
+import { JobParser } from '../core/job-parser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +34,18 @@ export function createCareerBrainServer(options: ServerOptions = {}) {
   const host = options.host || '127.0.0.1';
   const storage = options.storage || new ProfileStorage();
   const skillIntelligence = new SkillIntelligenceService();
+  const documentStore = new DocumentStore(storage);
+  const trackerService = new TrackerService(storage, documentStore);
+  const sessionService = new ApplicationSessionService(storage, trackerService);
+  const resumeGenerator = new ResumeGenerator(storage, documentStore);
+  const coverLetterGenerator = new CoverLetterGenerator(storage, documentStore);
+
+  // Phase 8: Startup validation (warn, don't block)
+  const compiler = detectCompiler();
+  if (!compiler.available) console.warn('[startup] pdflatex not found — PDF generation will fail. Install TeX Live or MiKTeX.');
+  try { fs.accessSync(documentStore.getGeneratedDir(), fs.constants.W_OK); } catch { console.warn(`[startup] Generated directory not writable: ${documentStore.getGeneratedDir()}`); }
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  if (!openRouterKey || openRouterKey === 'your_openrouter_api_key_here') console.warn('[startup] OPENROUTER_API_KEY not set — AI features unavailable.');
 
   // Ensure answer bank has baseline facts if empty
   seedInitialAnswerBank(storage);
@@ -88,10 +110,23 @@ export function createCareerBrainServer(options: ServerOptions = {}) {
       }
 
       const readBodyJson = async (): Promise<any> => {
+        const MAX_BODY = 5 * 1024 * 1024; // 5MB limit
+        const hdr = req.headers['content-length'];
+        if (hdr && parseInt(hdr, 10) > MAX_BODY) {
+          reject(new Error('Request body too large'));
+          return;
+        }
         return new Promise((resolve, reject) => {
           let body = '';
-          req.on('data', (chunk) => {
-            body += chunk;
+          let size = 0;
+          req.on('data', (chunk: Buffer) => {
+            size += chunk.length;
+            if (size > MAX_BODY) {
+              req.destroy();
+              reject(new Error('Request body too large'));
+              return;
+            }
+            body += chunk.toString('utf-8');
           });
           req.on('end', () => {
             if (!body) resolve({});
@@ -314,26 +349,430 @@ export function createCareerBrainServer(options: ServerOptions = {}) {
       }
 
 
+      // Application Sessions — detect page
+      if (pathname === '/api/sessions/detect' && req.method === 'POST') {
+        const body = await readBodyJson();
+        const { html, url: pageUrl } = body;
+        if (!html || !pageUrl) {
+          sendJson(400, { error: 'html and url are required' });
+          return;
+        }
+        const context = parseHtmlToDocument(html, pageUrl);
+        const detection = new JobPageDetector().detect(context);
+        const rawContent = new ContentExtractor().extract(context);
+        // Extract best preview fields from detection + rawContent
+        let company = detection.detectedCompany || '';
+        let roleTitle = detection.detectedJobTitle || '';
+        if (!company) {
+          company = rawContent.structuredMetadata?.['og:site_name'] || '';
+        }
+        // Fallback: parse page title for "Role | Company | LinkedIn" pattern
+        if ((!company || !roleTitle) && rawContent.title) {
+          const parts = rawContent.title.split('|').map((s: string) => s.trim());
+          const last = parts[parts.length - 1] || '';
+          if (last === 'LinkedIn' || last === 'LinkedIn' || last.includes('LinkedIn')) {
+            if (!roleTitle && parts[0]) roleTitle = parts[0];
+            if (!company && parts.length >= 3 && parts[1]) company = parts[1];
+          }
+        }
+        if (!roleTitle) {
+          for (const item of rawContent.jsonLd) {
+            if (item.title && typeof item.title === 'string') { roleTitle = item.title.trim(); break; }
+          }
+        }
+        if (!roleTitle) roleTitle = rawContent.title || '';
+        const warnings: string[] = [];
+        if (!company) warnings.push('Company could not be detected');
+        if (!roleTitle || roleTitle === rawContent.title) warnings.push('Role title may not be accurate');
+        sendJson(200, {
+          detection: { isJobPage: detection.isJobPage, confidence: detection.confidence, source: detection.source, reason: detection.reason },
+          preview: { company, roleTitle, location: detection.reason || '', remoteStatus: 'unknown', sourceUrl: pageUrl },
+          warnings
+        });
+        return;
+      }
+
+      // Application Sessions — start
+      if (pathname === '/api/sessions/start' && req.method === 'POST') {
+        const body = await readBodyJson();
+        const result = await sessionService.startApplicationFromJob({
+          pagePayload: body.pagePayload || undefined,
+          jobId: body.jobId || undefined,
+          manualContext: body.manualContext || undefined,
+          preferredCareerProfileId: body.preferredCareerProfileId || undefined,
+        });
+        sendJson(200, result);
+        return;
+      }
+
+      // Application Sessions — list
+      if (pathname === '/api/sessions' && req.method === 'GET') {
+        const statusFilter = url.searchParams.get('status') as any || undefined;
+        const jobIdFilter = url.searchParams.get('jobId') || undefined;
+        const sessions = sessionService.listRecentSessions(jobIdFilter || statusFilter ? { status: statusFilter, jobId: jobIdFilter } : undefined);
+        sendJson(200, sessions);
+        return;
+      }
+
+      // Application Sessions — get by id
+      if (pathname.startsWith('/api/sessions/') && req.method === 'GET') {
+        const id = pathname.replace('/api/sessions/', '');
+        if (!id || id.includes('/')) { sendJson(404, { error: 'Not found' }); return; }
+        const session = sessionService.getSessionById(id);
+        if (!session) { sendJson(404, { error: 'Session not found' }); return; }
+        sendJson(200, session);
+        return;
+      }
+
+      // Application Sessions — associate page
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/associate') && req.method === 'POST') {
+        const id = pathname.replace('/api/sessions/', '').replace('/associate', '');
+        const body = await readBodyJson();
+        const { url: pageUrl, pageType, title } = body;
+        if (!pageUrl || !pageType) {
+          sendJson(400, { error: 'url and pageType are required' });
+          return;
+        }
+        const updated = sessionService.attachPageToSession(id, { url: pageUrl, pageType, title });
+        sendJson(200, { success: true, session: updated });
+        return;
+      }
+
+      // Application Sessions — update status
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/status') && req.method === 'PUT') {
+        const id = pathname.replace('/api/sessions/', '').replace('/status', '');
+        const body = await readBodyJson();
+        if (!body.status) { sendJson(400, { error: 'status is required' }); return; }
+        const updated = sessionService.updateSessionStatus(id, body.status);
+        sendJson(200, { success: true, session: updated });
+        return;
+      }
+
+      // Application Sessions — update context (overrides)
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/context') && req.method === 'PUT') {
+        const id = pathname.replace('/api/sessions/', '').replace('/context', '');
+        const body = await readBodyJson();
+        const updated = sessionService.updateSessionJobContext(id, body);
+        sendJson(200, { success: true, session: updated });
+        return;
+      }
+
+
+      // Application Sessions — get effective context (merged snapshot + overrides)
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/effective-context') && req.method === 'GET') {
+        const id = pathname.replace('/api/sessions/', '').replace('/effective-context', '');
+        const ctx = sessionService.getEffectiveContext(id);
+        sendJson(200, ctx);
+        return;
+      }
+
+      // Application Sessions — set career profile
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/career-profile') && req.method === 'PUT') {
+        const id = pathname.replace('/api/sessions/', '').replace('/career-profile', '');
+        const body = await readBodyJson();
+        const updated = sessionService.setCareerProfile(id, body.careerProfileId, body.profileVersion, body.selectionSource || 'manual');
+        sendJson(200, { success: true, session: updated });
+        return;
+      }
+
+
+      // Application Sessions — classify fields (Phase 5)
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/classify-fields') && req.method === 'POST') {
+        const id = pathname.replace('/api/sessions/', '').replace('/classify-fields', '');
+        const session = sessionService.getSessionById(id);
+        if (!session) { sendJson(404, { error: 'Session not found' }); return; }
+        const body = await readBodyJson();
+        if (!body.fields || !Array.isArray(body.fields)) { sendJson(400, { error: 'fields array required' }); return; }
+        const master = storage.getMasterProfile();
+        if (!master) { sendJson(400, { error: 'Master profile not found' }); return; }
+        let careerProfile = null;
+        if (session.selectedCareerProfileId) careerProfile = storage.getCareerProfile(session.selectedCareerProfileId);
+        const savedAnswers = storage.getAnswerBankItems();
+        const skillIntel = new SkillIntelligenceService();
+        const skillRegistry = skillIntel.buildRegistry(master);
+        const { classifyFields } = await import('../core/field-resolver.js');
+        const result = classifyFields({ fields: body.fields, master, careerProfile, savedAnswers, skillRegistry });
+        sendJson(200, result);
+        return;
+      }
+
+      // Application Sessions — generate narrative answers (Phase 5)
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/generate-narratives') && req.method === 'POST') {
+        const id = pathname.replace('/api/sessions/', '').replace('/generate-narratives', '');
+        const session = sessionService.getSessionById(id);
+        if (!session) { sendJson(404, { error: 'Session not found' }); return; }
+        const body = await readBodyJson();
+        if (!body.fields || !Array.isArray(body.fields)) { sendJson(400, { error: 'fields array required' }); return; }
+        const master = storage.getMasterProfile();
+        if (!master) { sendJson(400, { error: 'Master profile not found' }); return; }
+        let careerProfile = null;
+        if (session.selectedCareerProfileId) careerProfile = storage.getCareerProfile(session.selectedCareerProfileId);
+        const savedAnswers = storage.getAnswerBankItems();
+        const skillIntel = new SkillIntelligenceService();
+        const skillRegistry = skillIntel.buildRegistry(master);
+        const { generateNarrativeAnswers } = await import('../core/narrative-generator.js');
+        const result = await generateNarrativeAnswers({
+          fields: body.fields,
+          context: {
+            master,
+            careerProfile,
+            jobContext: session.jobContextSnapshot,
+            answerBank: savedAnswers,
+            skillRegistry,
+          },
+        });
+        sendJson(200, result);
+        return;
+      }
+
+
+      // Serve .tex source by artifact ID
+      if (pathname.startsWith('/api/documents/') && pathname.endsWith('/tex') && req.method === 'GET') {
+        const artifactId = pathname.replace('/api/documents/', '').replace('/tex', '');
+        const doc = documentStore.getDocument(artifactId);
+        if (!doc || !doc.texPath) { sendJson(404, { error: 'Source not available' }); return; }
+        const resolved = path.resolve(doc.texPath);
+        if (!resolved.startsWith(path.resolve(documentStore.getGeneratedDir()))) { sendJson(403, { error: 'Access denied' }); return; }
+        if (!fs.existsSync(resolved)) { sendJson(404, { error: 'Source file not found' }); return; }
+        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end(fs.readFileSync(resolved));
+        return;
+      }
+
+
+      // Serve PDF by artifact ID
+      if (pathname.startsWith('/api/documents/') && pathname.endsWith('/pdf') && req.method === 'GET') {
+        const artifactId = pathname.replace('/api/documents/', '').replace('/pdf', '');
+        const doc = documentStore.getDocument(artifactId);
+        if (!doc || !doc.pdfPath) { sendJson(404, { error: 'PDF not available' }); return; }
+        const resolved = path.resolve(doc.pdfPath);
+        if (!resolved.startsWith(path.resolve(documentStore.getGeneratedDir()))) { sendJson(403, { error: 'Access denied' }); return; }
+        if (!fs.existsSync(resolved)) { sendJson(404, { error: 'PDF file not found' }); return; }
+        res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${path.basename(resolved)}"` });
+        res.end(fs.readFileSync(resolved));
+        return;
+      }
+
+
+      // ── Phase 6: Document Generation ──────────────────────
+      // Serve generated PDF files
+      if (pathname.startsWith('/api/generated/') && req.method === 'GET') {
+        const filePath = path.resolve(documentStore.getGeneratedDir(), pathname.replace('/api/generated/', ''));
+        if (!filePath.startsWith(path.resolve(documentStore.getGeneratedDir()))) { sendJson(403, { error: 'Access denied' }); return; }
+        if (!fs.existsSync(filePath)) { sendJson(404, { error: 'File not found' }); return; }
+        const ext = path.extname(filePath).toLowerCase();
+        const mime = ext === '.pdf' ? 'application/pdf' : ext === '.tex' ? 'text/plain; charset=utf-8' : 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': mime, 'Content-Disposition': `inline; filename="${path.basename(filePath)}"` });
+        res.end(fs.readFileSync(filePath));
+        return;
+      }
+
+      // List documents for a session
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/documents') && req.method === 'GET') {
+        const id = pathname.replace('/api/sessions/', '').replace('/documents', '');
+        const docs = documentStore.listSessionDocuments(id);
+        sendJson(200, docs);
+        return;
+      }
+
+      // Get single document full metadata (backend-only paths)
+      if (pathname.startsWith('/api/documents/') && !pathname.includes('/sessions/') && req.method === 'GET') {
+        const artifactId = pathname.replace('/api/documents/', '');
+        const doc = documentStore.getDocument(artifactId);
+        if (!doc) { sendJson(404, { error: 'Document not found' }); return; }
+        sendJson(200, doc);
+        return;
+      }
+
+      // Reserve / initialize document artifact for a session
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/documents/init') && req.method === 'POST') {
+        const id = pathname.replace('/api/sessions/', '').replace('/documents/init', '');
+        const session = sessionService.getSessionById(id);
+        if (!session) { sendJson(404, { error: 'Session not found' }); return; }
+        const body = await readBodyJson();
+        const docType = body.documentType === 'COVER_LETTER' ? 'COVER_LETTER' : 'RESUME';
+        const company = session.jobContextSnapshot?.companyName || '';
+        const role = session.jobContextSnapshot?.roleTitle || '';
+        const appDir = documentStore.ensureAppDir(id, company, role);
+        const careerProfileId = session.selectedCareerProfileId;
+        const careerProfile = careerProfileId ? storage.getCareerProfile(careerProfileId) : null;
+        const doc = documentStore.createDocument({
+          sessionId: id, documentType: docType, outputDir: appDir,
+          careerProfileId, careerProfileVersion: session.selectedCareerProfileVersion,
+          instructionSummary: careerProfile
+            ? (docType === 'RESUME' ? careerProfile.customResumeInstructions : careerProfile.customCoverLetterInstructions)
+            : null,
+          previousArtifactId: body.previousArtifactId || null,
+          revisionReason: body.revisionReason || null,
+        });
+        sendJson(201, doc);
+        return;
+      }
+
+      // Update document status after .tex write or PDF compile
+      if (pathname.startsWith('/api/documents/') && pathname.endsWith('/status') && req.method === 'PUT') {
+        const artifactId = pathname.replace('/api/documents/', '').replace('/status', '');
+        const body = await readBodyJson();
+        const updated = documentStore.updateDocument(artifactId, {
+          status: body.status, texPath: body.texPath, pdfPath: body.pdfPath,
+          errorMessage: body.errorMessage, errorDetails: body.errorDetails,
+        });
+        sendJson(200, updated);
+        return;
+      }
+
+      // Reveal generated folder path (for local backend)
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/documents/open-dir') && req.method === 'GET') {
+        const id = pathname.replace('/api/sessions/', '').replace('/documents/open-dir', '');
+        const session = sessionService.getSessionById(id);
+        if (!session) { sendJson(404, { error: 'Session not found' }); return; }
+        const company = session.jobContextSnapshot?.companyName || '';
+        const role = session.jobContextSnapshot?.roleTitle || '';
+        const appDir = documentStore.ensureAppDir(id, company, role);
+        sendJson(200, { path: path.resolve(appDir) });
+        return;
+      }
+
+
+      // ── Phase 6: Compiler Detection ──────────────────────
+      if (pathname === '/api/compiler/status' && req.method === 'GET') {
+        const info = detectCompiler();
+        sendJson(200, info);
+        return;
+      }
+
+
+      // ── Phase 6: Cover Letter Generation ────────────────
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/generate-cover-letter') && req.method === 'POST') {
+        const id = pathname.replace('/api/sessions/', '').replace('/generate-cover-letter', '');
+        const result = await coverLetterGenerator.generateCoverLetter(id);
+        sendJson(result.success ? 200 : 422, result);
+        return;
+      }
+
+
+      // ── Phase 6: Resume Generation ──────────────────────
+      if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/generate-resume') && req.method === 'POST') {
+        const id = pathname.replace('/api/sessions/', '').replace('/generate-resume', '');
+        const result = await resumeGenerator.generateResume(id);
+        sendJson(result.success ? 200 : 422, result);
+        return;
+      }
+
+
+      // ── Phase 6: Document Revision ──────────────────────
+      if (pathname.startsWith('/api/documents/') && pathname.endsWith('/revise') && req.method === 'POST') {
+        const artifactId = pathname.replace('/api/documents/', '').replace('/revise', '');
+        const body = await readBodyJson();
+        const instructions = body.instructions;
+        if (!instructions || typeof instructions !== 'string' || !instructions.trim()) {
+          sendJson(400, { error: 'instructions string required' }); return;
+        }
+        const doc = documentStore.getDocument(artifactId);
+        if (!doc) { sendJson(404, { error: 'Document not found' }); return; }
+        let result: any;
+        if (doc.documentType === 'RESUME') {
+          result = await resumeGenerator.reviseResume(artifactId, instructions.trim());
+        } else if (doc.documentType === 'COVER_LETTER') {
+          result = await coverLetterGenerator.reviseCoverLetter(artifactId, instructions.trim());
+        } else {
+          sendJson(400, { error: 'Unsupported document type' }); return;
+        }
+        sendJson(result.success ? 200 : 422, result);
+        return;
+      }
+
+
+      // Export tracker as CSV
+      if (pathname === '/api/tracker/export' && req.method === 'GET') {
+        const csv = trackerService.exportCsv();
+        res.writeHead(200, {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="application-tracker.csv"',
+        });
+        res.end(Buffer.from(csv, 'utf-8'));
+        return;
+      }
+
+
+      // ── Phase 7: Application Tracker ────────────────────
+      // List all tracker entries
+      if (pathname === '/api/tracker' && req.method === 'GET') {
+        const statusFilter = url.searchParams.get('status') || undefined;
+        const entries = trackerService.listTrackerEntries(statusFilter as any);
+        sendJson(200, entries);
+        return;
+      }
+
+      // Update tracker status
+      if (pathname.startsWith('/api/tracker/') && pathname.endsWith('/status') && req.method === 'PUT') {
+        const sessionId = pathname.replace('/api/tracker/', '').replace('/status', '');
+        const body = await readBodyJson();
+        if (!body.status) { sendJson(400, { error: 'status required' }); return; }
+        try {
+          const entry = trackerService.updateStatus(sessionId, body.status);
+          sendJson(200, entry);
+        } catch (err: any) { sendJson(422, { error: err.message }); }
+        return;
+      }
+
+      // Mark as applied
+      if (pathname.startsWith('/api/tracker/') && pathname.endsWith('/mark-applied') && req.method === 'PUT') {
+        const sessionId = pathname.replace('/api/tracker/', '').replace('/mark-applied', '');
+        const body = await readBodyJson();
+        try {
+          const entry = trackerService.markApplied(sessionId, body.dateApplied || undefined);
+          sendJson(200, entry);
+        } catch (err: any) { sendJson(422, { error: err.message }); }
+        return;
+      }
+
+      // Update applied date
+      if (pathname.startsWith('/api/tracker/') && pathname.endsWith('/applied-date') && req.method === 'PUT') {
+        const sessionId = pathname.replace('/api/tracker/', '').replace('/applied-date', '');
+        const body = await readBodyJson();
+        if (!body.dateApplied) { sendJson(400, { error: 'dateApplied required' }); return; }
+        try {
+          const entry = trackerService.updateAppliedDate(sessionId, body.dateApplied);
+          sendJson(200, entry);
+        } catch (err: any) { sendJson(422, { error: err.message }); }
+        return;
+      }
+
+      // Update notes
+      if (pathname.startsWith('/api/tracker/') && pathname.endsWith('/notes') && req.method === 'PUT') {
+        const sessionId = pathname.replace('/api/tracker/', '').replace('/notes', '');
+        const body = await readBodyJson();
+        try {
+          const entry = trackerService.updateNotes(sessionId, body.notes || '');
+          sendJson(200, entry);
+        } catch (err: any) { sendJson(422, { error: err.message }); }
+        return;
+      }
+
+
       sendJson(404, { error: 'Route not found' });
     } catch (err: any) {
       console.error('Server error:', err);
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: err.message || 'Internal server error' }));
+      res.end(JSON.stringify({ error: 'Internal server error' }));
     }
   });
 
   return {
     server,
     listen: () => {
-      return new Promise<void>((resolve) => {
+      return new Promise<void>((resolve, reject) => {
+        server.on('error', (err: any) => reject(err));
         server.listen(port, host, () => {
-          console.log(`\n🧠 Jobby Career Brain UI running at: http://${host}:${port}/\n`);
+          console.log('\\n🧠 Jobby Career Brain UI running at: http://' + host + ':' + port + '/\\n');
           resolve();
         });
       });
     },
     close: () => {
       return new Promise<void>((resolve) => {
+        try { storage.getDatabase().close(); } catch {}
         server.close(() => resolve());
       });
     },

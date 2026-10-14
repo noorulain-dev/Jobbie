@@ -1,0 +1,58 @@
+{
+  "id": "5fbf1314-7f0e-491d-ae48-d173c95fd08c",
+  "jobId": "2467b541-7fb3-40ef-afbd-541c9a82de06",
+  "status": "CANCELLED",
+  "sourceJobUrl": "https://www.linkedin.com/jobs/view/4471529251/",
+  "applicationUrl": "https://www.linkedin.com/jobs/view/4471529251",
+  "associatedPages": [
+    {
+      "url": "https://www.linkedin.com/jobs/view/4471529251/",
+      "pageType": "OTHER",
+      "attachedAt": "2026-10-14T01:35:54.548Z",
+      "title": "Founding GTM Engineer | Floqer | LinkedIn"
+    },
+    {
+      "url": "https://tally.so/r/NpGqr0",
+      "pageType": "OTHER",
+      "attachedAt": "2026-10-14T01:44:58.850Z",
+      "title": "Business Operations/GTM Engineer Application Form"
+    }
+  ],
+  "jobContextSnapshot": {
+    "companyName": "Floqer",
+    "roleTitle": "Founding GTM Engineer",
+    "originalSourceUrl": "https://www.linkedin.com/jobs/view/4471529251/",
+    "companyUrl": null,
+    "location": null,
+    "remoteStatus": "unknown",
+    "description": "0 notificationsSkip to searchSkip to main contentMeMe",
+    "responsibilities": [],
+    "requiredQualifications": [],
+    "preferredQualifications": [],
+    "requiredSkills": [],
+    "preferredSkills": [],
+    "technologies": [],
+    "salaryMin": null,
+    "salaryMax": null,
+    "salaryCurrency": "USD",
+    "salaryPeriod": "yearly",
+    "salaryText": null,
+    "employmentType": "full-time",
+    "seniority": "unknown",
+    "extractionTimestamp": "2026-10-14T01:35:41.396Z",
+    "extractionConfidence": 0.95,
+    "extractionWarnings": [],
+    "source": "linkedin",
+    "parserVersion": "1.0.0"
+  },
+  "jobContextOverrides": {
+    "trackerStatus": "DRAFT"
+  },
+  "selectedCareerProfileId": "software-engineering",
+  "selectedCareerProfileVersion": null,
+  "careerProfileSelectionSource": "auto",
+  "masterProfileVersion": 9,
+  "createdAt": "2026-10-14T01:35:41.462Z",
+  "updatedAt": "2026-10-14T02:16:48.156Z",
+  "lastActivityAt": "2026-10-14T02:16:48.156Z"
+}

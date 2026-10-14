@@ -12,6 +12,13 @@ import {
 import { Job, JobSchema } from '../types/job.js';
 import { JobSnapshot, JobSnapshotSchema } from '../types/job-snapshot.js';
 import { JobDedupCluster, JobDedupClusterSchema } from '../types/job-dedup.js';
+import {
+  ApplicationSession,
+  ApplicationSessionSchema,
+  ApplicationSessionStatus,
+  AssociatedPage,
+} from '../types/application-session.js';
+
 
 import { JobbyDatabase } from '../db/database.js';
 
@@ -223,6 +230,58 @@ export class ProfileStorage {
   public getDedupCluster(clusterId: string): JobDedupCluster | null {
     return this.db.getDedupCluster(clusterId);
   }
+  // ==========================================
+  // APPLICATION SESSIONS
+  // ==========================================
+
+  public saveSession(session: ApplicationSession): void {
+    const validated = ApplicationSessionSchema.parse(session);
+    this.db.saveSession(validated);
+
+    if (this.profileDir !== ':memory:') {
+      const sessionsDir = path.join(this.profileDir, 'sessions');
+      if (!fs.existsSync(sessionsDir)) {
+        fs.mkdirSync(sessionsDir, { recursive: true });
+      }
+      const jsonPath = path.join(sessionsDir, `${validated.id}.json`);
+      fs.writeFileSync(jsonPath, JSON.stringify(validated, null, 2), 'utf-8');
+    }
+  }
+
+  public getSession(id: string): ApplicationSession | null {
+    return this.db.getSession(id);
+  }
+
+  public getActiveSession(): ApplicationSession | null {
+    return this.db.getActiveSession();
+  }
+
+  public listSessions(filter?: { status?: ApplicationSessionStatus; jobId?: string }): ApplicationSession[] {
+    return this.db.listSessions(filter);
+  }
+
+  public updateSessionStatus(id: string, newStatus: ApplicationSessionStatus): ApplicationSession {
+    const updated = this.db.updateSessionStatus(id, newStatus);
+    if (this.profileDir !== ':memory:') {
+      const jsonPath = path.join(this.profileDir, 'sessions', `${updated.id}.json`);
+      if (fs.existsSync(jsonPath)) {
+        fs.writeFileSync(jsonPath, JSON.stringify(updated, null, 2), 'utf-8');
+      }
+    }
+    return updated;
+  }
+
+  public attachPageToSession(id: string, page: AssociatedPage): ApplicationSession {
+    const updated = this.db.attachPageToSession(id, page);
+    if (this.profileDir !== ':memory:') {
+      const jsonPath = path.join(this.profileDir, 'sessions', `${updated.id}.json`);
+      if (fs.existsSync(jsonPath)) {
+        fs.writeFileSync(jsonPath, JSON.stringify(updated, null, 2), 'utf-8');
+      }
+    }
+    return updated;
+  }
+
 
 
   public close(): void {

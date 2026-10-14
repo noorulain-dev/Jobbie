@@ -106,4 +106,78 @@ describe('Career Brain Server & UI REST Endpoints', () => {
     expect((sanitized.personal as any).apiKey).toBeUndefined();
     expect((sanitized.screening as any).password).toBeUndefined();
   });
+
+  it('creates and lists application sessions via REST API', async () => {
+    const res = await fetch(`http://127.0.0.1:${port}/api/sessions`, { method: 'GET' });
+    expect(res.status).toBe(200);
+    const initial = await res.json();
+    expect(Array.isArray(initial)).toBe(true);
+  });
+
+  it('detects a job posting via /api/sessions/detect', async () => {
+    const html = '<html><head><title>Software Engineer at Acme</title></head><body><h1>Software Engineer</h1><p>Acme is hiring a backend engineer.</p></body></html>';
+    const res = await fetch(`http://127.0.0.1:${port}/api/sessions/detect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, url: 'https://acme.com/careers/swe' })
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.detection).toBeDefined();
+    expect(data.preview).toBeDefined();
+    expect(data.preview.sourceUrl).toBe('https://acme.com/careers/swe');
+  });
+
+  it('creates and retrieves an application session', async () => {
+    const startRes = await fetch(`http://127.0.0.1:${port}/api/sessions/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        manualContext: {
+          url: 'https://example.com/jobs/123',
+          companyName: 'Test Corp',
+          title: 'Test Engineer'
+        }
+      })
+    });
+    expect(startRes.status).toBe(200);
+    const created = await startRes.json();
+    expect(created.session).toBeDefined();
+    expect(created.session.jobContextSnapshot.companyName).toBe('Test Corp');
+
+    const getRes = await fetch(`http://127.0.0.1:${port}/api/sessions/${created.session.id}`);
+    expect(getRes.status).toBe(200);
+    const retrieved = await getRes.json();
+    expect(retrieved.id).toBe(created.session.id);
+  });
+
+  it('updates session status through lifecycle', async () => {
+    const startRes = await fetch(`http://127.0.0.1:${port}/api/sessions/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        manualContext: { url: 'https://example.com/jobs/lifecycle', companyName: 'Lifecycle Inc', title: 'Test Role' }
+      })
+    });
+    const { session } = await startRes.json();
+    expect(session.status).toBe('ACTIVE');
+
+    const pauseRes = await fetch(`http://127.0.0.1:${port}/api/sessions/${session.id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'PAUSED' })
+    });
+    expect(pauseRes.status).toBe(200);
+    const paused = await pauseRes.json();
+    expect(paused.session.status).toBe('PAUSED');
+
+    const cancelRes = await fetch(`http://127.0.0.1:${port}/api/sessions/${session.id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'CANCELLED' })
+    });
+    expect(cancelRes.status).toBe(200);
+    const cancelled = await cancelRes.json();
+    expect(cancelled.session.status).toBe('CANCELLED');
+  });
 });
