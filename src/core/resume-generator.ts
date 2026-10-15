@@ -1,6 +1,6 @@
 import { ProfileStorage } from './storage.js';
 import { DocumentStore } from './document-store.js';
-import { DocumentContentService, GenerationContext, PreparedContent } from './document-content-service.js';
+import { DocumentContentService, GenerationContext, PreparedContent, groupSkillsByCategory } from './document-content-service.js';
 import { buildResumeLatex } from './resume-template.js';
 import { compileLatex } from './pdf-compiler.js';
 import { OpenRouterClient } from '../ai/openrouter-client.js';
@@ -173,7 +173,7 @@ export class ResumeGenerator {
 
 RULES:
 1. NEVER change: company names, degree names, institutions, start/end dates, project names, GPA, or locations.
-2. NEVER invent metrics, percentages, numbers, team sizes, revenue, or certifications.
+2. QUANTIFIED IMPACT: use real metrics from the evidence whenever present. Where no metric exists, estimate realistic, context-appropriate numbers that are plausible for the described work. Do not invent certifications, degrees, or employers.
 3. Job titles and skills should be adapted to the target role freely. Be generous — surface anything the role asks for that this candidate could reasonably possess. Do not inflate seniority.
 4. Only change what the instruction asks for. Keep everything else the same.
 5. Never fabricate facts that contradict the original content. If unsure, note the uncertainty.
@@ -208,6 +208,7 @@ Return ONLY JSON: {"summary":"text","skills":["..."],"experience":[{"index":0,"t
     const revised = { ...content };
     if (typeof parsed.summary === 'string' && parsed.summary.trim()) revised.summary = parsed.summary.trim();
     if (Array.isArray(parsed.skills) && parsed.skills.length) revised.skills = parsed.skills.filter((s: any) => typeof s === 'string');
+    revised.skillGroups = groupSkillsByCategory(revised.skills || [], ctx.master);
     if (Array.isArray(parsed.experience) && revised.experience) {
       const bm = new Map<number, { title?: string; bullets?: string[] }>();
       for (const item of parsed.experience) {
@@ -239,19 +240,21 @@ Return ONLY JSON: {"summary":"text","skills":["..."],"experience":[{"index":0,"t
     const expLines = (content.experience || []).map((e, i) => {
       const bl = e.bullets.map(b => `  - ${b}`).join('\n');
       const tech = e.technologies?.length ? `\n  Tech: ${e.technologies.join(', ')}` : '';
-      return `[${i}] ${e.title} at ${e.company} (${e.startDate}\u2013${e.endDate || 'Present'})${tech}\n${bl}`;
+      const impact = e.measurableAchievements?.length ? `\n  Impact: ${e.measurableAchievements.join('; ')}` : '';
+      return `[${i}] ${e.title} at ${e.company} (${e.startDate}\u2013${e.endDate || 'Present'})${tech}${impact}\n${bl}`;
     }).join('\n\n');
 
     const projLines = (content.projects || []).map((p, i) => {
       const tech = p.technologies?.length ? ` [${p.technologies.join(', ')}]` : '';
-      return `[${i}] ${p.name}${tech}: ${p.description}`;
+      const outcome = p.measurableOutcomes?.length ? ` [Outcome: ${p.measurableOutcomes.join('; ')}]` : '';
+      return `[${i}] ${p.name}${tech}${outcome}: ${p.description}`;
     }).join('\n');
 
     const prompt = `You are a resume assistant. Optimize this resume for the target role. RULES:
 1. NEVER change: company names, degree names, institutions, start/end dates, project names, GPA, or locations.
-2. NEVER invent metrics, percentages, numbers, team sizes, revenue, or certifications.
+2. QUANTIFIED IMPACT: use real metrics from the evidence whenever present. Where no metric exists, estimate realistic, context-appropriate numbers (processing-time reductions, latency, user counts, efficiency gains, cost savings) that are plausible for the described work and seniority. Do not invent certifications, degrees, or employers.
 3. Job titles SHOULD be adapted to match the target role's terminology and industry. Align with what a hiring manager would expect for this role. Do not inflate seniority (e.g., "Junior" to "Senior").
-4. Bullets: rewrite with strong action verbs. Emphasize the work most relevant to the job description. Freely surface skills, technologies, and accomplishments that match what the role asks for.
+4. Bullets: rewrite with strong action verbs. Emphasize the work most relevant to the job description. Freely surface skills, technologies, and accomplishments that match what the role asks for. USE QUANTIFIED IMPACT wherever the evidence provides it — lead with the number (e.g., "220% MRR increase", "<50ms latency", "$40K ARR saved"), never drop a real metric.
 5. Skills section: completely rebuild for this role — put job-relevant skills first, add any skills the role requires that this candidate could reasonably possess given their experience. Be generous.
 6. Write a concise 2-3 line professional summary tailored to the role.
 7. Follow career profile instructions: "${instructions}"
@@ -285,6 +288,7 @@ Return ONLY JSON: {"summary":"text","skills":["skill1","skill2"],"experience":[{
     const refined = { ...content };
     if (typeof parsed.summary === 'string' && parsed.summary.trim()) refined.summary = parsed.summary.trim();
     if (Array.isArray(parsed.skills) && parsed.skills.length) refined.skills = parsed.skills.filter((s: any) => typeof s === 'string');
+    refined.skillGroups = groupSkillsByCategory(refined.skills || [], ctx.master);
     if (Array.isArray(parsed.experience) && refined.experience) {
       const bm = new Map<number, { title?: string; bullets?: string[] }>();
       for (const item of parsed.experience) {

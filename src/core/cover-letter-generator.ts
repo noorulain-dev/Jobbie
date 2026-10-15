@@ -156,19 +156,22 @@ async reviseCoverLetter(artifactId: string, revisionInstructions: string): Promi
 
     const prompt = `You are revising a cover letter. Apply this instruction: "${instructions}"
 
-RULES:
-1. NEVER fabricate metrics, years, credentials, or company knowledge.
-2. NEVER invent contact names, addresses, or personal anecdotes.
-3. Only change what the instruction asks for. Keep everything else the same.
-4. Connect real experience to job requirements.
-5. Keep concise: 1 opening + 1-2 body + 1 closing paragraph.
+STANDARDS:
+- Evidence only: never fabricate years, credentials, or company knowledge. Metrics may be estimated realistically from context where none are provided.
+- Never invent contact names, addresses, or anecdotes.
+- Connect real experience to role requirements. Show value, not lists.
+- Use numerical figures where the evidence supports them.
+- Professional, warm, ground-in-evidence tone. Avoid clichés and buzzwords.
+- 250-350 words. Do not pad.
+- Do not duplicate the resume; do not mention GPA, salary, visa, or demographics.
+- Only change what the instruction asks for. Keep everything else the same.
 
 ${jp.join('\n')}
 ${ep.join('\n')}
 
 CURRENT LETTER:\n${currentBody}
 
-Return ONLY JSON: {"paragraphs":["Opening...","Body...","Closing..."]}`;
+Return ONLY JSON: {"paragraphs":["opening...","evidence 1...","evidence 2...","closing..."]}`;
 
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -206,7 +209,9 @@ Return ONLY JSON: {"paragraphs":["Opening...","Body...","Closing..."]}`;
     const expPriority = cp?.priorityExperienceIds || master.experience.map(e => e.id);
     const expMap = new Map(master.experience.map(e => [e.id, e]));
     for (const e of expPriority.map(id => expMap.get(id)!).filter(Boolean).slice(0, 3)) {
-      ep.push(`${e.title} at ${e.company} (${e.startDate}\u2013${e.endDate || 'Present'})\n${e.bulletPoints.slice(0, 3).map(b => b.text).join('\n')}`);
+      let expText = `${e.title} at ${e.company} (${e.startDate}\u2013${e.endDate || 'Present'})\n${e.bulletPoints.slice(0, 3).map(b => b.text).join('\n')}`;
+      if (e.measurableAchievements?.length) expText += `\nMeasurable: ${e.measurableAchievements.join('; ')}`;
+      ep.push(expText);
     }
     const approved = master.skills.filter(s => s.status === 'EXPLICIT_KNOWN' || s.status === 'USER_APPROVED_KNOWN');
     if (approved.length) ep.push(`SKILLS: ${approved.map(s => s.name).join(', ')}`);
@@ -217,28 +222,46 @@ Return ONLY JSON: {"paragraphs":["Opening...","Body...","Closing..."]}`;
     const projIds = cp?.highlightedProjectIds || master.projects.map(p => p.id);
     const projMap = new Map(master.projects.map(p => [p.id, p]));
     for (const p of projIds.map(id => projMap.get(id)!).filter(Boolean).slice(0, 2)) {
-      ep.push(`PROJECT: ${p.name} \u2014 ${p.description}`);
+      let pText = `${p.name}\u2014${p.description}`;
+      if (p.measurableOutcomes?.length) pText += `\nOutcome: ${p.measurableOutcomes.join('; ')}`;
+      ep.push(`PROJECT: ${pText}`);
     }
 
-    const prompt = `You are a cover letter assistant. Write a professional letter body.
+    const prompt = `You are a professional cover-letter writer. Produce a polished, evidence-based letter tailored to this specific role.
 
-RULES:
-1. ONLY use provided evidence. NEVER fabricate metrics, years, credentials, or company knowledge.
-2. NEVER claim familiarity with company culture, products, or strategy.
-3. NEVER invent a contact name or address. Use neutral salutation.
-4. NEVER mention salary, visa, demographics, or contact details.
-5. Connect real experience to job requirements with concrete evidence.
-6. Keep concise: 1 opening + 1-2 body + 1 closing paragraph.
-7. DO NOT re-list the resume or repeat the job description.
-8. NO generic "passion" or "ideal candidate" language.
-9. Career profile instructions: "${instructions}"
-10. If job description is sparse, write a general letter without fabricating specifics.
+BEFORE WRITING, identify:
+- What the role is actually looking for.
+- The 2-3 most relevant requirements.
+- Which verified experiences from the evidence demonstrate those capabilities.
+- Which specific projects or outcomes provide the strongest supporting evidence.
+- Any requirements for which no supporting evidence exists (omit those).
+
+RULES (apply strictly):
+1. EVIDENCE ONLY. Never fabricate years, credentials, product knowledge, or company facts. Metrics may be estimated realistically from context where none are provided — use plausible numbers that match the described work.
+2. NEVER claim familiarity with company culture, products, strategy, customers, or recent achievements unless stated in the job context.
+3. NEVER invent a contact name or address. Use a neutral salutation (e.g., "Dear Hiring Team,").
+4. NEVER mention salary, visa, demographics, GPA, or personal contact details in the body.
+5. DO NOT open with "I am writing to express my interest in..." or similar clichés.
+6. AVOID generic language: no "dynamic and fast-paced environment," "perfect fit," "passionate about innovation," "leverage my unique skill set," "invaluable asset," or excessive buzzwords.
+7. Connect real, specific experiences to the role's needs. Show what you did and why it matters.
+8. Use numerical figures to demonstrate contribution where the evidence provides them. State impact, not empty claims.
+9. Demonstrate skills through examples — do not merely list technologies or responsibilities.
+10. TONE: professional, warm, confident, grounded in evidence. Clear, direct sentences with varied structure.
+11. LENGTH: 250-350 words, one page. Shorter is better than padded. Do not exceed 400 words.
+12. NEVER duplicate the resume. Complement it with narrative context.
+13. Career profile instructions: "${instructions}"
+
+STRUCTURE (4 paragraphs):
+1. OPENING: Name the role and employer accurately. State the strongest reason your background is relevant. No clichés.
+2. EVIDENCE 1: Connect a specific accomplishment to a key role requirement. Include measurable result if supported.
+3. EVIDENCE 2: Present a complementary example from a different role or project. Show range (technical, operational, collaborative, or problem-solving).
+4. CLOSING: Briefly connect experience to the role. Express interest professionally. Close without pressure or flattery.
 
 ${jp.join('\n')}
 
 ${ep.join('\n')}
 
-Return ONLY JSON: {"paragraphs":["Opening...","Body...","Closing..."]}`;
+Return ONLY valid JSON: {"paragraphs":["opening paragraph...","evidence paragraph 1...","evidence paragraph 2...","closing paragraph..."]}`;
 
     const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

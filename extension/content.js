@@ -140,6 +140,50 @@ function fillFields(answers) {
     else { results.push({ fieldId: ans.fieldId, status: 'FAILED', reason: 'Write not accepted by page' }); }
   }
   return { results: results, changed: changed, changedCount: changed.length, totalFields: fields.length, filledAt: new Date().toISOString() };
+// Direct fill: finds elements by label text instead of index-based matching
+function fillFieldsDirect(answers) {
+  var changed = [];
+  var results = [];
+  var allInputs = document.querySelectorAll('input:not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):not([type="hidden"]), textarea, select');
+  
+  for (var i = 0; i < answers.length; i++) {
+    var ans = answers[i];
+    if (!ans.value && ans.value !== '0') { results.push({ fieldId: ans.fieldId || '', status: 'NEEDS_USER_INPUT', reason: 'No value provided' }); continue; }
+    if (!ans.label) { results.push({ fieldId: ans.fieldId || '', status: 'FAILED', reason: 'No label' }); continue; }
+    
+    var el = null;
+    var lbl = ans.label.toLowerCase();
+    
+    // Find by label matching
+    for (var j = 0; j < allInputs.length; j++) {
+      var inp = allInputs[j];
+      var inpLabel = '';
+      if (inp.id) { var l = document.querySelector('label[for="' + CSS.escape(inp.id) + '"]'); if (l) inpLabel = l.textContent.trim(); }
+      if (!inpLabel && inp.getAttribute('aria-label')) inpLabel = inp.getAttribute('aria-label').trim();
+      if (!inpLabel && inp.placeholder) inpLabel = inp.placeholder.trim();
+      if (!inpLabel && inp.name) inpLabel = inp.name;
+      if (!inpLabel) { var p = inp.closest('label'); if (p) inpLabel = p.textContent.trim(); }
+      if (!inpLabel) { var ps = inp.previousElementSibling; if (ps && (ps.tagName === 'LABEL' || ps.tagName === 'SPAN' || ps.tagName === 'DIV')) inpLabel = ps.textContent.trim(); }
+      
+      if (inpLabel && (inpLabel.toLowerCase().includes(lbl) || lbl.includes(inpLabel.toLowerCase()))) {
+        el = inp; break;
+      }
+    }
+    
+    if (!el) { results.push({ fieldId: ans.fieldId || '', status: 'FAILED', reason: 'No element matched label: ' + ans.label.substring(0, 30) }); continue; }
+    if (el.disabled || el.readOnly) { results.push({ fieldId: ans.fieldId || '', status: 'SKIPPED', reason: 'Disabled/readonly' }); continue; }
+    
+    var ct = (el.tagName === 'TEXTAREA') ? 'textarea' : (el.tagName === 'SELECT' ? 'select' : (el.getAttribute('type') || 'text'));
+    var ok = writeValue(el, ct, ans.value);
+    if (ok) {
+      changed.push({ fieldId: ans.fieldId || '', previousValue: el.value || '', newValue: ans.value });
+      results.push({ fieldId: ans.fieldId || '', status: 'FILLED', newValue: ans.value });
+    } else {
+      results.push({ fieldId: ans.fieldId || '', status: 'FAILED', reason: 'Write not accepted' });
+    }
+  }
+  return { results: results, changed: changed, changedCount: changed.length, totalFields: allInputs.length, filledAt: new Date().toISOString() };
+}
 }
 
 function findMatchingField(liveFields, answer) {
@@ -203,6 +247,37 @@ function writeValue(el, controlType, value) {
       el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
       el.blur();
       return true;
+// Fill file upload fields: creates a File from base64 and applies via DataTransfer
+function fillFileUpload(filename, base64data) {
+  var changed = [];
+  var inputs = document.querySelectorAll('input[type="file"]');
+  for (var i = 0; i < inputs.length; i++) {
+    var el = inputs[i];
+    if (el.disabled) continue;
+    var st = window.getComputedStyle(el);
+    if (st.display === 'none' || st.visibility === 'hidden') continue;
+    try {
+      var arr = base64ToBytes(base64data);
+      var blob = new Blob([arr], {type:'application/pdf'});
+      var file = new File([blob], filename, {type:'application/pdf'});
+      var dt = new DataTransfer();
+      dt.items.add(file);
+      el.files = dt.files;
+      fire(el, 'change');
+      changed.push({fieldId: 'file_'+i, status: 'FILLED', fieldLabel: el.name || 'Resume Upload'});
+    } catch(e) {
+      changed.push({fieldId: 'file_'+i, status: 'FAILED', reason: e.message});
+    }
+  }
+  return { changed: changed, changedCount: changed.length };
+}
+
+function base64ToBytes(base64) {
+  var raw = atob(base64);
+  var bytes = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return bytes;
+}
     }
   } catch (e) { return false; }
 }

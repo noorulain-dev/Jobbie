@@ -1,0 +1,191 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{geometry}
+
+\geometry{left=0.5in, top=0.4in, right=0.5in, bottom=0.4in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Section formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\vspace{-2pt}\hrule\vspace{-4pt}]
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{#1 \vspace{-2pt}}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item[]
+    \begin{tabular*}{\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeSubHeadingListStart}{
+  \begin{itemize}[leftmargin=0.0in, label={}]
+}
+
+\newcommand{\resumeSubHeadingListEnd}{
+  \end{itemize}
+}
+
+\newcommand{\resumeItemListStart}{
+  \begin{itemize}[leftmargin=0.15in]
+}
+
+\newcommand{\resumeItemListEnd}{
+  \end{itemize}\vspace{-4pt}
+}
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    {\Huge \scshape Noor Ul Ain Khurshid} \\ \vspace{4pt}
+    \small Applied AI Engineer \textbar{} AI OS \& Workflow Automation \\ \vspace{3pt}
+    \small Ontario, Canada $|$ +1 (807) 372-1717 $|$
+    \href{mailto:noorulayn.dev@gmail.com}{noorulayn.dev@gmail.com} \\ \vspace{2pt}
+    \href{https://linkedin.com/in/noorulain-k}{linkedin.com/in/noorulain-k}
+    $|$
+    \href{https://github.com}{github.com}
+\end{center}
+
+%-----------SUMMARY-----------
+\section{Professional Summary}
+\small{
+Applied AI Engineer specializing in AI OS and workflow automation, building production systems that connect LLMs, agents, APIs, data, and business workflows. Experienced translating ambiguous operational problems into executable systems with structured outputs, stateful routing, evaluations, exception handling, and human-in-the-loop controls. Hands-on across Sales, Marketing, Customer Success, Recruiting, and Operations, with experience taking systems from problem definition through deployment and measurable business impact.
+}
+
+%-----------SKILLS-----------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+        \textbf{AI Systems \& Automation:} LLM APIs, Agentic Workflows, Tool Orchestration, MCP, Agents SDK, LangGraph, CrewAI, RAG, Structured Generation, State Management, Human-in-the-Loop, Fallback Logic, Retries, Evaluation Rubrics, Failure Logging, Prompt Management \\
+        \textbf{Engineering:} Python, TypeScript, JavaScript, Golang, SQL, Node.js, Fastify, Express, React, Next.js, REST APIs, CLI Interfaces \\
+        \textbf{Data \& Processing:} JSON, CSV, Markdown, SQL, PostgreSQL, MySQL, Snowflake, Redis, MongoDB, File Processing, OCR, Semantic Search \\
+        \textbf{Workflow Tools \& Integrations:} n8n, Make, Zapier, Slack Events API, WhatsApp API, Google Workspace, Notion, HubSpot, Attio, ATS Tools, Webhooks, CRM Integrations \\
+        \textbf{Infrastructure \& Production:} Docker, AWS (EC2, Lambda, S3, SageMaker), GCP, Caddy, Celery, BullMQ, MinIO, Stripe, Chargebee \\
+        \textbf{Domains:} Revenue Tech, Sales, Marketing, Recruiting, Customer Success, Operations, Attribution, Security \& Privacy Boundaries
+    }}
+\end{itemize}
+
+%-----------EXPERIENCE-----------
+\section{Professional Experience}
+\resumeSubHeadingListStart
+
+    \resumeSubheading
+      {Co-Founder \& Lead Technical Engineer}{July 2026 -- Present}
+      {Opsides}{Remote (Wyoming, USA)}
+      \resumeItemListStart
+        \resumeItem{Built modular \textbf{AI OS and workflow systems} connecting multi-channel data, agentic tools, APIs, and operational webhooks using \textbf{TypeScript, Fastify, and PostgreSQL}.}
+        \resumeItem{Translated ambiguous requests from non-technical stakeholders into executable workflows by defining \textbf{inputs, decision logic, outputs, exception paths, and human approval points}.}
+        \resumeItem{Designed evaluation sets, test cases, and failure logging to validate AI-generated outputs and improve reliability through \textbf{fallback and retry logic}.}
+        \resumeItem{Evaluated model and tooling trade-offs across \textbf{quality, latency, API cost, privacy, permissions, and security} to establish production boundaries for AI-powered workflows.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Revenue Tech Engineer}{May 2024 -- Present}
+      {Mission Inbox}{Remote (California, USA)}
+      \resumeItemListStart
+        \resumeItem{Partnered directly with Sales, Marketing, and Customer Success leadership to identify operational bottlenecks and build automation systems that improved execution and company ROI.}
+        \resumeItem{Built cross-functional workflow infrastructure connecting \textbf{Snowflake, HubSpot, Attio, n8n, Make, and Zapier} to automate Customer Success and outbound sales processes.}
+        \resumeItem{Engineered end-to-end \textbf{UTM attribution, Google Ads, and marketing data pipelines}, while managing billing architecture through \textbf{Stripe and Chargebee}, contributing to a \textbf{220\% increase in MRR}.}
+        \resumeItem{Built an internal \textbf{AI operations assistant} using Golang and Python to translate natural-language requests into cross-departmental actions, integrating \textbf{Redux, Celery, and BullMQ} for stateful execution and background processing.}
+        \resumeItem{Architected and deployed sister products including \textbf{Mission Redirect} and \textbf{Mission Shield}, independently taking infrastructure and automation problems from requirements through production deployment.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {AI Engineer}{July 2023 -- April 2024}
+      {SHRDC}{Hybrid (Kuala Lumpur, Malaysia)}
+      \resumeItemListStart
+        \resumeItem{Built deep learning-based \textbf{OCR and file-processing pipelines} integrated into POS systems to extract, validate, and transform complex invoices into structured \textbf{JSON and CSV} data.}
+        \resumeItem{Designed \textbf{RAG and semantic search} systems over MySQL data, establishing baseline evaluations to measure retrieval quality and validate system performance.}
+        \resumeItem{Built a \textbf{drag-and-drop workflow interface} enabling non-engineering operators to configure automated data-processing pipelines without writing prompts or code.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {AI Research Intern}{December 2022 -- June 2023}
+      {World Wide Fund for Nature (WWF)}{Remote (Kuala Lumpur, Malaysia)}
+      \resumeItemListStart
+        \resumeItem{Pre-processed multi-modal datasets and implemented computer vision models for automated classification, establishing quantitative evaluation metrics to measure model performance.}
+      \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{Selected AI OS \& Workflow Automation Projects}
+\resumeSubHeadingListStart
+
+    \resumeSubheading
+      {WeekIt.ai -- AI Task Extraction \& Workflow Automation}
+      {\href{https://weekit.ai/}{weekit.ai}}
+      {}{}
+      \vspace{-12pt}
+      \resumeItemListStart
+        \resumeItem{Built an AI workflow engine that converts unstructured \textbf{Gmail, Slack, transcript, and Markdown inputs} into structured task objects using LLMs, stateful routing, and structured generation.}
+        \resumeItem{Designed evaluation rubrics and exception handling around \textbf{ambiguous attribution, task state, delegation, idempotency, and AI-generated mutations}, combining deterministic safeguards with human-in-the-loop triage.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Jordy -- Autonomous Outbound Sales Representative}
+      {\href{https://hirejordy.com/}{hirejordy.com}}
+      {}{}
+      \vspace{-12pt}
+      \resumeItemListStart
+        \resumeItem{Built an autonomous sales agent with \textbf{tool orchestration, state management, structured outputs, and retry/fallback logic} to execute personalized multi-channel sales workflows.}
+        \resumeItem{Developed file-processing and lead-research pipelines that transform web content into structured \textbf{buyer JSON profiles}, connecting automated research and meeting bookings to CRM workflows.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Aerlou -- Multi-Channel AI OS \& Front Desk}
+      {\href{https://aerlou.com/}{aerlou.com} $|$ \href{https://chat.aerlou.com/}{chat.aerlou.com}}
+      {}{}
+      \vspace{-12pt}
+      \resumeItemListStart
+        \resumeItem{Deployed a multi-channel \textbf{AI OS across WhatsApp, Voice, and SMS} with stateful context, tool use, human-in-the-loop approvals, and CRM logging.}
+        \resumeItem{Implemented structured generation and fallback handlers to transform ambiguous voice and text inputs into reliable appointment-scheduling workflows.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Mission Redirect -- Traffic Routing Engine}
+      {\href{https://missionredirect.com/}{missionredirect.com}}
+      {}{}
+      \vspace{-12pt}
+      \resumeItemListStart
+        \resumeItem{Independently built a high-availability URL routing system with dynamic rule management, operational logging, CLI interfaces, and automated SSL generation, \textbf{saving \$40K USD in ARR}.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Mission Shield -- Email Security \& IP Protection}
+      {\href{https://www.missioninbox.com/mi-shield}{missioninbox.com/mi-shield}}
+      {}{}
+      \vspace{-12pt}
+      \resumeItemListStart
+        \resumeItem{Built automated email security and delivery-control logic with realistic \textbf{privacy, rate-limiting, security, and operational boundaries} for production infrastructure.}
+      \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------EDUCATION-----------
+\section{Education}
+\resumeSubHeadingListStart
+    \resumeSubheading
+      {Swinburne University}{}
+      {Bachelor of Science in Computer Science}{Graduated 2023}
+      \resumeItemListStart
+        \resumeItem{\textbf{Majors:} Software Development \& Artificial Intelligence \textbar{} \textbf{Minor:} Data Science}
+      \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\end{document}

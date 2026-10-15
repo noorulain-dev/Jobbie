@@ -1,142 +1,156 @@
 import { ResumeContent } from '../types/latex-content.js';
-import { escapeLatex, escapeLatexUrl, escapeLatexList } from './latex-escape.js';
+import { escapeLatex, escapeLatexList } from './latex-escape.js';
 
-/**
- * Build a complete LaTeX resume document from structured content.
- * Uses a clean, ATS-friendly single-column layout.
- * Empty sections are omitted entirely — no broken commands.
- */
+function hrefUrl(url: string): string {
+  if (!url) return '';
+  const display = url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+  const esc = display.replace(/%/g, '\\%').replace(/#/g, '\\#').replace(/_/g, '\\_');
+  return '\\href{' + url.replace(/%/g, '\\%').replace(/#/g, '\\#') + '}{' + esc + '}';
+}
+
 export function buildResumeLatex(content: ResumeContent): string {
   const lines: string[] = [];
-
-  // ── Preamble ──
-  lines.push('\\documentclass[11pt,a4paper]{article}');
-  lines.push('\\usepackage[margin=0.75in]{geometry}');
-  lines.push('\\usepackage{hyperref}');
+  lines.push('\\documentclass[letterpaper,10pt]{article}');
+  lines.push('');
+  lines.push('\\usepackage[empty]{fullpage}');
+  lines.push('\\usepackage{titlesec}');
+  lines.push('\\usepackage[usenames,dvipsnames]{color}');
   lines.push('\\usepackage{enumitem}');
-  lines.push('\\usepackage[T1]{fontenc}');
-  lines.push('\\usepackage{charter}');  // Clean serif font
+  lines.push('\\usepackage[hidelinks]{hyperref}');
+  lines.push('\\usepackage{geometry}');
   lines.push('');
-  lines.push('\\setlength{\\parindent}{0pt}');
-  lines.push('\\setlength{\\parskip}{0.4em}');
-  lines.push('\\setlist{nosep,leftmargin=1.2em}');
+  lines.push('\\geometry{left=0.5in, top=0.4in, right=0.5in, bottom=0.4in}');
   lines.push('');
-  lines.push('\\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}');
+  lines.push('\\urlstyle{same}');
+  lines.push('\\raggedbottom');
+  lines.push('\\raggedright');
+  lines.push('\\setlength{\\tabcolsep}{0in}');
+  lines.push('');
+  lines.push('\\titleformat{\\section}{');
+  lines.push('  \\vspace{-4pt}\\scshape\\raggedright\\large\\bfseries');
+  lines.push('}{}{0em}{}[\\color{black}\\vspace{-2pt}\\hrule\\vspace{-4pt}]');
+  lines.push('');
+  lines.push('\\newcommand{\\resumeItem}[1]{ \\item\\small{#1 \\vspace{-2pt}} }');
+  lines.push('\\newcommand{\\resumeSubheading}[4]{');
+  lines.push('  \\vspace{-2pt}\\item[]');
+  lines.push('    \\begin{tabular*}{\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}');
+  lines.push('      \\textbf{#1} & #2 \\\\');
+  lines.push('      \\textit{\\small#3} & \\textit{\\small #4} \\\\');
+  lines.push('    \\end{tabular*}\\vspace{-6pt}');
+  lines.push('}');
+  lines.push('\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.0in, label={}]}');
+  lines.push('\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}');
+  lines.push('\\newcommand{\\resumeItemListStart}{\\begin{itemize}[leftmargin=0.15in]}');
+  lines.push('\\newcommand{\\resumeItemListEnd}{\\end{itemize}}');
   lines.push('');
   lines.push('\\begin{document}');
   lines.push('');
 
-  // ── Header / Contact ──
   const name = [content.firstName, content.lastName].filter(Boolean).join(' ');
-  if (name) {
-    lines.push(`{\\LARGE \\textbf{${escapeLatex(name)}}}\\\\[2pt]`);
-  }
+  lines.push('\\begin{center}');
+  if (name) lines.push('    {\\Huge \\scshape ' + escapeLatex(name) + '} \\\\ \\vspace{4pt}');
+  if (content.headline) lines.push('    \\small ' + escapeLatex(content.headline) + ' \\\\ \\vspace{3pt}');
+  const loc = [content.provinceState, content.country].filter(Boolean).join(', ');
+  const contactA: string[] = [];
+  if (loc) contactA.push(escapeLatex(loc));
+  if (content.phone) contactA.push(escapeLatex(content.phone));
+  if (content.email) contactA.push('\\href{mailto:' + content.email + '}{' + escapeLatex(content.email) + '}');
+  if (contactA.length) lines.push('    \\small ' + contactA.join(' $|$ ') + ' \\\\ \\vspace{2pt}');
+  const contactB: string[] = [];
+  if (content.linkedin) contactB.push(hrefUrl(content.linkedin));
+  if (content.github) contactB.push(hrefUrl(content.github));
+  if (contactB.length) lines.push('    ' + contactB.join(' $|$ '));
+  lines.push('\\end{center}');
+  lines.push('');
 
-  const contactParts: string[] = [];
-  if (content.email) contactParts.push(escapeLatex(content.email));
-  if (content.phone) contactParts.push(escapeLatex(content.phone));
-  if (content.city || content.provinceState) {
-    contactParts.push(escapeLatex([content.city, content.provinceState].filter(Boolean).join(', ')));
-  }
-  if (contactParts.length) {
-    lines.push(`{\\small ${contactParts.join(' \\\\textbar{} ')}}\\\\[2pt]`);
-  }
-
-  const linkParts: string[] = [];
-  if (content.linkedin) linkParts.push(escapeLatexUrl(content.linkedin));
-  if (content.github) linkParts.push(escapeLatexUrl(content.github));
-  if (content.portfolio) linkParts.push(escapeLatexUrl(content.portfolio));
-  if (linkParts.length) {
-    lines.push(`{\\small ${linkParts.join(' \\\\textbar{} ')}}`);
-  }
-
-  lines.push('\\vspace{4pt}');
-  lines.push('\\hrule');
-  lines.push('\\vspace{6pt}');
-
-  // ── Summary ──
   if (content.summary) {
-    lines.push('\\section*{Professional Summary}');
+    lines.push('\\section{Professional Summary}');
+    lines.push('\\small{');
     lines.push(escapeLatex(content.summary));
+    lines.push('}');
     lines.push('');
   }
 
-  // ── Experience ──
+  if (content.skillGroups && content.skillGroups.length > 0) {
+    lines.push('\\section{Technical Skills}');
+    lines.push('\\begin{itemize}[leftmargin=0.15in, label={}]');
+    lines.push('    \\small{\\item{');
+    for (const group of content.skillGroups) {
+      if (!group.skills.length) continue;
+      lines.push('        \\textbf{' + escapeLatex(group.category) + ':} ' + escapeLatexList(group.skills) + ' \\\\');
+    }
+    lines.push('    }}');
+    lines.push('\\end{itemize}');
+    lines.push('');
+  } else if (content.skills && content.skills.length > 0) {
+    lines.push('\\section{Technical Skills}');
+    lines.push('\\begin{itemize}[leftmargin=0.15in, label={}]');
+    lines.push('    \\small{\\item{' + escapeLatexList(content.skills) + '}}');
+    lines.push('\\end{itemize}');
+    lines.push('');
+  }
   if (content.experience && content.experience.length > 0) {
-    lines.push('\\section*{Experience}');
+    lines.push('\\section{Professional Experience}');
+    lines.push('\\resumeSubHeadingListStart');
     for (const exp of content.experience) {
       const dates = [exp.startDate, exp.endDate || 'Present'].join(' -- ');
-      lines.push(`\\textbf{${escapeLatex(exp.title)}} \\hfill {\\small ${escapeLatex(dates)}}`);
-      lines.push(`\\textit{${escapeLatex(exp.company)}}${exp.location ? `, ${escapeLatex(exp.location)}` : ''}\\\\[2pt]`);
-      if (exp.bullets && exp.bullets.length > 0) {
-        lines.push('\\begin{itemize}');
-        for (const b of exp.bullets) {
-          lines.push(`  \\item ${escapeLatex(b)}`);
-        }
-        lines.push('\\end{itemize}');
-      }
-      if (exp.technologies && exp.technologies.length > 0) {
-        lines.push(`{\\small \\textbf{Tech:} ${escapeLatexList(exp.technologies)}}\\\\[4pt]`);
-      }
+      const loc = exp.location ? escapeLatex(exp.location) : '';
+      lines.push('    \\resumeSubheading');
+      lines.push('      {' + escapeLatex(exp.title) + '}{' + escapeLatex(dates) + '}');
+      lines.push('      {' + escapeLatex(exp.company) + '}{' + loc + '}');
+      lines.push('      \\resumeItemListStart');
+      for (const b of exp.bullets) lines.push('        \\resumeItem{' + escapeLatex(b) + '}');
+      lines.push('      \\resumeItemListEnd');
     }
-  }
-
-  // ── Education ──
-  if (content.education && content.education.length > 0) {
-    lines.push('\\section*{Education}');
-    for (const ed of content.education) {
-      const degree = [ed.degree, ed.major ? `in ${ed.major}` : ''].filter(Boolean).join(' ');
-      const dates = [ed.startDate, ed.endDate].filter(Boolean).join(' -- ');
-      lines.push(`\\textbf{${escapeLatex(degree)}} \\hfill {\\small ${escapeLatex(dates)}}`);
-      lines.push(`\\textit{${escapeLatex(ed.institution)}}${ed.gpa ? `, GPA: ${escapeLatex(ed.gpa)}` : ''}\\\\[4pt]`);
-    }
-  }
-
-  // ── Skills ──
-  if (content.skills && content.skills.length > 0) {
-    lines.push('\\section*{Technical Skills}');
-    lines.push(escapeLatexList(content.skills));
+    lines.push('\\resumeSubHeadingListEnd');
     lines.push('');
   }
 
-  // ── Projects ──
   if (content.projects && content.projects.length > 0) {
-    lines.push('\\section*{Projects}');
+    lines.push('\\section{Selected Projects}');
+    lines.push('\\resumeSubHeadingListStart');
     for (const proj of content.projects) {
-      lines.push(`\\textbf{${escapeLatex(proj.name)}}${proj.url ? ` \\\\textbar{} ${escapeLatexUrl(proj.url)}` : ''}\\\\[2pt]`);
-      lines.push(escapeLatex(proj.description));
-      if (proj.technologies && proj.technologies.length > 0) {
-        lines.push(`\\\\[2pt]{\\small \\textbf{Tech:} ${escapeLatexList(proj.technologies)}}`);
+      const url = proj.url ? hrefUrl(proj.url) : '';
+      lines.push('    \\resumeSubheading');
+      lines.push('      {' + escapeLatex(proj.name) + '}{' + url + '}');
+      lines.push('      {}{}');
+      lines.push('      \\vspace{-12pt}');
+      lines.push('      \\resumeItemListStart');
+      lines.push('        \\resumeItem{' + escapeLatex(proj.description) + '}');
+      if (proj.measurableOutcomes && proj.measurableOutcomes.length > 0) {
+        lines.push('        \\resumeItem{\\textbf{' + escapeLatex(proj.measurableOutcomes.join('; ')) + '}}');
       }
-      lines.push('\\\\[6pt]');
+      lines.push('      \\resumeItemListEnd');
     }
-  }
-
-  // ── Certifications ──
-  if (content.certifications && content.certifications.length > 0) {
-    lines.push('\\section*{Certifications}');
-    lines.push('\\begin{itemize}');
-    for (const cert of content.certifications) {
-      lines.push(`  \\item ${escapeLatex(cert)}`);
-    }
-    lines.push('\\end{itemize}');
-  }
-
-  // ── Languages ──
-  if (content.languages && content.languages.length > 0) {
-    lines.push('\\section*{Languages}');
-    lines.push(escapeLatexList(content.languages));
+    lines.push('\\resumeSubHeadingListEnd');
     lines.push('');
   }
 
-  // ── Awards ──
-  if (content.awards && content.awards.length > 0) {
-    lines.push('\\section*{Awards}');
-    lines.push('\\begin{itemize}');
-    for (const award of content.awards) {
-      lines.push(`  \\item ${escapeLatex(award)}`);
+  if (content.education && content.education.length > 0) {
+    lines.push('\\section{Education}');
+    lines.push('\\resumeSubHeadingListStart');
+    for (const ed of content.education) {
+      const degree = ed.degree || '';
+      const grad = ed.endDate ? 'Graduated ' + ed.endDate : '';
+      lines.push('    \\resumeSubheading');
+      lines.push('      {' + escapeLatex(ed.institution) + '}{}');
+      lines.push('      {' + escapeLatex(degree) + '}{' + escapeLatex(grad) + '}');
+      if (ed.major) {
+        lines.push('      \\resumeItemListStart');
+        lines.push('        \\resumeItem{\\textbf{Majors:} ' + escapeLatex(ed.major) + '}');
+        lines.push('      \\resumeItemListEnd');
+      }
     }
+    lines.push('\\resumeSubHeadingListEnd');
+    lines.push('');
+  }
+
+  if (content.certifications && content.certifications.length > 0) {
+    lines.push('\\section{Certifications}');
+    lines.push('\\begin{itemize}[leftmargin=0.15in]');
+    for (const cert of content.certifications) lines.push('    \\item \\small{' + escapeLatex(cert) + '}');
     lines.push('\\end{itemize}');
+    lines.push('');
   }
 
   lines.push('\\end{document}');

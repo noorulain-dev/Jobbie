@@ -1,6 +1,6 @@
 {
-  "id": "c794d1b6-327e-473b-b411-12422b2f86b3",
-  "jobId": "d729f3b7-b9d4-43f3-b63c-1e72dfacf4b4",
+  "id": "d7135196-c2ac-41b6-8b83-c2294831f4b8",
+  "jobId": "43c3c88c-3b61-4797-9a9e-68665df0df6c",
   "status": "CANCELLED",
   "sourceJobUrl": "https://www.linkedin.com/jobs/view/4471529251/",
   "applicationUrl": "https://www.linkedin.com/jobs/view/4471529251",
@@ -8,8 +8,14 @@
     {
       "url": "https://www.linkedin.com/jobs/view/4471529251/",
       "pageType": "OTHER",
-      "attachedAt": "2026-10-14T01:28:30.167Z",
+      "attachedAt": "2026-10-14T19:37:05.370Z",
       "title": "Founding GTM Engineer | Floqer | LinkedIn"
+    },
+    {
+      "url": "https://tally.so/r/NpGqr0",
+      "pageType": "OTHER",
+      "attachedAt": "2026-10-14T17:01:35.350Z",
+      "title": "Business Operations/GTM Engineer Application Form"
     }
   ],
   "jobContextSnapshot": {
@@ -19,7 +25,7 @@
     "companyUrl": null,
     "location": null,
     "remoteStatus": "unknown",
-    "description": "0 notificationsSkip to searchSkip to main contentMeMe",
+    "description": "1 notificationJob moved to In progress under Clicked apply.Skip to searchSkip to main contentMeMe",
     "responsibilities": [],
     "requiredQualifications": [],
     "preferredQualifications": [],
@@ -33,7 +39,7 @@
     "salaryText": null,
     "employmentType": "full-time",
     "seniority": "unknown",
-    "extractionTimestamp": "2026-10-14T01:28:17.811Z",
+    "extractionTimestamp": "2026-10-14T17:01:11.330Z",
     "extractionConfidence": 0.95,
     "extractionWarnings": [],
     "source": "linkedin",
@@ -46,7 +52,7 @@
   "selectedCareerProfileVersion": null,
   "careerProfileSelectionSource": "auto",
   "masterProfileVersion": 9,
-  "createdAt": "2026-10-14T01:28:17.905Z",
-  "updatedAt": "2026-10-14T01:35:37.230Z",
-  "lastActivityAt": "2026-10-14T01:35:37.230Z"
+  "createdAt": "2026-10-14T17:01:11.427Z",
+  "updatedAt": "2026-10-14T19:38:03.000Z",
+  "lastActivityAt": "2026-10-14T19:38:03.000Z"
 }

@@ -121,6 +121,5 @@ function skMatch(intent: string, field: FormFieldDescriptor, registry: SkillRegi
 function cpFact(intent: string, cp?: CareerProfile | null): ProposedAnswer | null {
   if (!cp) return null;
   if (intent === 'full_name' || intent === 'current_title') return pa(cp.headline, 'careerProfile.headline');
-  if (intent === 'narrative') return pa(cp.narrativeSummary, 'careerProfile.narrativeSummary', 'master_profile_fact', true);
   return null;
 }

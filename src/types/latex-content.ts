@@ -20,6 +20,9 @@ export interface ResumeContent {
   /** Professional summary (pre-escaped for LaTeX) */
   summary?: string;
 
+  /** One-line professional headline (e.g., "Applied AI Engineer | AI OS & Workflow Automation") */
+  headline?: string;
+
   /** Experience entries — ordered by priority */
   experience?: ResumeExperienceEntry[];
 
@@ -28,6 +31,9 @@ export interface ResumeContent {
 
   /** Skills — grouped by category or flat list */
   skills?: string[];
+
+  /** Skills grouped into labeled categories for structured rendering */
+  skillGroups?: { category: string; skills: string[] }[];
 
   /** Selected projects */
   projects?: ResumeProjectEntry[];
@@ -46,6 +52,8 @@ export interface ResumeExperienceEntry {
   location?: string;
   bullets: string[];
   technologies?: string[];
+  /** Quantified achievements (e.g., "Drove 220% MRR increase") */
+  measurableAchievements?: string[];
 }
 
 export interface ResumeEducationEntry {
@@ -62,6 +70,8 @@ export interface ResumeProjectEntry {
   description: string;
   url?: string;
   technologies?: string[];
+  /** Quantified outcomes (e.g., "Saved $40K USD in ARR") */
+  measurableOutcomes?: string[];
 }
 
 export interface CoverLetterContent {
@@ -69,6 +79,10 @@ export interface CoverLetterContent {
   lastName?: string;
   email?: string;
   phone?: string;
+  city?: string;
+  provinceState?: string;
+  linkedin?: string;
+  github?: string;
 
   /** Date line */
   date?: string;

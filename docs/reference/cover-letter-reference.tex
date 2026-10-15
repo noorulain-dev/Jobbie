@@ -1,0 +1,153 @@
+
+\documentclass[11pt,a4paper]{letter}
+
+% --------------------------------------------------
+% Page layout and typography
+% --------------------------------------------------
+\usepackage[a4paper,margin=0.85in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{accent}{HTML}{234A68}
+\definecolor{bodytext}{HTML}{252525}
+\definecolor{muted}{HTML}{555555}
+
+\renewcommand{\familydefault}{\sfdefault}
+\color{bodytext}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+\setlength{\emergencystretch}{2em}
+
+% --------------------------------------------------
+% Applicant details
+% Replace these values with verified profile data.
+% Keep URLs separate from their displayed text.
+% --------------------------------------------------
+\newcommand{\ApplicantName}{Your Full Name}
+\newcommand{\ApplicantLocation}{Ontario, Canada}
+\newcommand{\ApplicantPhone}{+1 (000) 000-0000}
+\newcommand{\ApplicantEmail}{your.email@example.com}
+
+\newcommand{\LinkedInURL}{https://linkedin.com/in/your-profile}
+\newcommand{\LinkedInText}{linkedin.com/in/your-profile}
+
+\newcommand{\GitHubURL}{https://github.com/your-profile}
+\newcommand{\GitHubText}{github.com/your-profile}
+
+% --------------------------------------------------
+% Application details
+% --------------------------------------------------
+\newcommand{\LetterDate}{October 14, 2026}
+\newcommand{\HiringManager}{Hiring Manager}
+\newcommand{\CompanyName}{Company Name}
+\newcommand{\JobTitle}{Position Title}
+
+% Optional recipient address. Remove if unavailable.
+\newcommand{\CompanyAddress}{}
+
+% --------------------------------------------------
+% Letter formatting
+% --------------------------------------------------
+\signature{\ApplicantName}
+
+\begin{document}
+
+\begin{letter}{}
+
+% --------------------------------------------------
+% Header
+% --------------------------------------------------
+{\fontsize{21}{25}\selectfont
+\bfseries\color{accent}\ApplicantName\par}
+
+\vspace{3pt}
+
+{\small
+\ApplicantLocation
+\quad|\quad
+\ApplicantPhone
+\quad|\quad
+\href{mailto:\ApplicantEmail}{\ApplicantEmail}
+\par}
+
+{\small
+\href{\LinkedInURL}{\LinkedInText}
+\quad|\quad
+\href{\GitHubURL}{\GitHubText}
+\par}
+
+\vspace{5pt}
+{\color{accent}\rule{\linewidth}{1.2pt}}
+
+\vspace{12pt}
+
+% --------------------------------------------------
+% Date and recipient
+% --------------------------------------------------
+\textcolor{muted}{\LetterDate}
+
+\vspace{6pt}
+
+\textbf{\CompanyName}\\
+\JobTitle
+
+% Only include a physical address when verified.
+% \CompanyAddress
+
+\vspace{8pt}
+
+Dear \HiringManager,
+
+% --------------------------------------------------
+% Opening paragraph
+% State the role and the strongest relevant reason
+% for applying. Avoid generic opening statements.
+% --------------------------------------------------
+
+[Write a concise, role-specific opening paragraph.
+Explain why the position aligns with the applicant's
+verified experience and relevant capabilities.]
+
+% --------------------------------------------------
+% Evidence paragraph 1
+% --------------------------------------------------
+
+[Connect a specific, verified professional achievement
+to one of the employer's important requirements.
+Explain the applicant's contribution and its impact.
+Use metrics only when supported by evidence.]
+
+% --------------------------------------------------
+% Evidence paragraph 2
+% --------------------------------------------------
+
+[Provide a second, complementary example from a
+relevant role or project. Highlight the technical,
+operational, or business value of the work.
+Do not simply repeat the resume.]
+
+% --------------------------------------------------
+% Closing
+% --------------------------------------------------
+
+[Briefly explain the value the applicant could bring
+to this role and express interest in discussing the
+opportunity. Keep the tone professional and confident.]
+
+\vspace{4pt}
+
+Sincerely,
+
+\vspace{18pt}
+
+\textbf{\ApplicantName}
+
+\end{letter}
+\end{document}
+
+

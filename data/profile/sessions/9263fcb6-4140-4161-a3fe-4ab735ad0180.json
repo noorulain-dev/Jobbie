@@ -1,6 +1,6 @@
 {
-  "id": "fc4ea8f6-064c-4879-bcec-543e8f3c12f1",
-  "jobId": "6410f5d3-3286-4a7d-b67a-57173e63faf6",
+  "id": "9263fcb6-4140-4161-a3fe-4ab735ad0180",
+  "jobId": "89316699-ae5e-4de2-8f4a-f377b2c37107",
   "status": "CANCELLED",
   "sourceJobUrl": "https://www.linkedin.com/jobs/view/4471529251/",
   "applicationUrl": "https://www.linkedin.com/jobs/view/4471529251",
@@ -8,18 +8,24 @@
     {
       "url": "https://www.linkedin.com/jobs/view/4471529251/",
       "pageType": "OTHER",
-      "attachedAt": "2026-10-14T00:51:46.234Z",
+      "attachedAt": "2026-10-14T15:42:29.635Z",
       "title": "Founding GTM Engineer | Floqer | LinkedIn"
+    },
+    {
+      "url": "https://tally.so/r/NpGqr0",
+      "pageType": "OTHER",
+      "attachedAt": "2026-10-14T15:43:23.992Z",
+      "title": "Business Operations/GTM Engineer Application Form"
     }
   ],
   "jobContextSnapshot": {
-    "companyName": "Unknown Company",
-    "roleTitle": "Founding GTM Engineer | Floqer | LinkedIn",
+    "companyName": "Floqer",
+    "roleTitle": "Founding GTM Engineer",
     "originalSourceUrl": "https://www.linkedin.com/jobs/view/4471529251/",
     "companyUrl": null,
     "location": null,
     "remoteStatus": "unknown",
-    "description": "No description content extracted.",
+    "description": "0 notificationsSkip to searchSkip to main contentMeMe",
     "responsibilities": [],
     "requiredQualifications": [],
     "preferredQualifications": [],
@@ -33,11 +39,9 @@
     "salaryText": null,
     "employmentType": "full-time",
     "seniority": "unknown",
-    "extractionTimestamp": "2026-10-13T22:15:33.551Z",
-    "extractionConfidence": 0.85,
-    "extractionWarnings": [
-      "Job description was incomplete or could not be cleanly extracted from page."
-    ],
+    "extractionTimestamp": "2026-10-14T15:42:12.928Z",
+    "extractionConfidence": 0.95,
+    "extractionWarnings": [],
     "source": "linkedin",
     "parserVersion": "1.0.0"
   },
@@ -48,7 +52,7 @@
   "selectedCareerProfileVersion": null,
   "careerProfileSelectionSource": "auto",
   "masterProfileVersion": 9,
-  "createdAt": "2026-10-13T22:15:33.611Z",
-  "updatedAt": "2026-10-14T00:59:30.105Z",
-  "lastActivityAt": "2026-10-14T00:59:30.105Z"
+  "createdAt": "2026-10-14T15:42:13.016Z",
+  "updatedAt": "2026-10-14T17:01:04.196Z",
+  "lastActivityAt": "2026-10-14T17:01:04.196Z"
 }

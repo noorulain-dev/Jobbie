@@ -1,80 +1,120 @@
 import { CoverLetterContent } from '../types/latex-content.js';
 import { escapeLatex } from './latex-escape.js';
 
-/**
- * Build a complete LaTeX cover letter document from structured content.
- * Matching font and style with resume template.
- * Omits recipient/company details cleanly when unavailable.
- */
+// Readable short URL (strip https://)
+function shortUrl(url: string): string {
+  return url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+}
+
 export function buildCoverLetterLatex(content: CoverLetterContent): string {
   const lines: string[] = [];
+  const name = [content.firstName, content.lastName].filter(Boolean).join(' ') || 'Applicant';
 
-  // ── Preamble ──
-  lines.push('\\documentclass[11pt,a4paper]{article}');
-  lines.push('\\usepackage[margin=1in]{geometry}');
-  lines.push('\\usepackage{hyperref}');
+  lines.push('\\documentclass[11pt,letterpaper]{letter}');
+  lines.push('');
+  lines.push('\\usepackage[margin=0.85in]{geometry}');
   lines.push('\\usepackage[T1]{fontenc}');
-  lines.push('\\usepackage{charter}');
+  lines.push('\\usepackage{lmodern}');
+  lines.push('\\usepackage{microtype}');
+  lines.push('\\usepackage{parskip}');
+  lines.push('\\usepackage{xcolor}');
+  lines.push('\\usepackage[hidelinks]{hyperref}');
   lines.push('');
+  lines.push('\\definecolor{accent}{HTML}{234A68}');
+  lines.push('\\definecolor{bodytext}{HTML}{252525}');
+  lines.push('\\definecolor{muted}{HTML}{555555}');
+  lines.push('');
+  lines.push('\\renewcommand{\\familydefault}{\\sfdefault}');
+  lines.push('\\color{bodytext}');
+  lines.push('\\pagestyle{empty}');
   lines.push('\\setlength{\\parindent}{0pt}');
-  lines.push('\\setlength{\\parskip}{0.6em}');
+  lines.push('\\setlength{\\parskip}{8pt}');
+  lines.push('\\setlength{\\emergencystretch}{2em}');
   lines.push('');
-  lines.push('\\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}');
+  lines.push('\\signature{\\textbf{' + escapeLatex(name) + '}}');
   lines.push('');
   lines.push('\\begin{document}');
   lines.push('');
+  lines.push('\\begin{letter}{}');
+  lines.push('');
 
-  // ── Sender info (top right) ──
-  const name = [content.firstName, content.lastName].filter(Boolean).join(' ');
-  if (name || content.email || content.phone) {
-    lines.push('\\begin{flushright}');
-    if (name) lines.push(`{\\large \\textbf{${escapeLatex(name)}}}\\\\[2pt]`);
-    if (content.email) lines.push(`{\\small ${escapeLatex(content.email)}}`);
-    if (content.phone) lines.push(`{\\small ${escapeLatex(content.phone)}}`);
-    lines.push('\\end{flushright}');
-    lines.push('\\vspace{8pt}');
+  // Header
+  lines.push('{\\fontsize{21}{25}\\selectfont');
+  lines.push('\\bfseries\\color{accent}' + escapeLatex(name) + '\\par}');
+  lines.push('');
+  lines.push('\\vspace{3pt}');
+  lines.push('');
+
+  // Contact line
+  const loc = [content.provinceState, content.country].filter(Boolean).join(', ');
+  const contactA: string[] = [];
+  if (loc) contactA.push(escapeLatex(loc));
+  if (content.phone) contactA.push(escapeLatex(content.phone));
+  if (content.email) contactA.push('\\href{mailto:' + (content.email || '') + '}{' + escapeLatex(content.email || '') + '}');
+  if (contactA.length) {
+    lines.push('{\\small');
+    lines.push(contactA.join(' \\quad|\\quad '));
+    lines.push('\\par}');
   }
 
-  // ── Date ──
-  if (content.date) {
-    lines.push(escapeLatex(content.date));
-    lines.push('\\vspace{12pt}');
-  } else {
-    lines.push('\\today');
-    lines.push('\\vspace{12pt}');
+  // Links
+  const contactB: string[] = [];
+  if (content.linkedin) contactB.push('\\href{' + content.linkedin + '}{' + escapeLatex(shortUrl(content.linkedin)) + '}');
+  if (content.github) contactB.push('\\href{' + content.github + '}{' + escapeLatex(shortUrl(content.github)) + '}');
+  if (contactB.length) {
+    lines.push('{\\small');
+    lines.push(contactB.join(' \\quad|\\quad '));
+    lines.push('\\par}');
   }
 
-  // ── Recipient (only what's known) ──
+  lines.push('');
+  lines.push('\\vspace{5pt}');
+  lines.push('{\\color{accent}\\rule{\\linewidth}{1.2pt}}');
+  lines.push('');
+  lines.push('\\vspace{12pt}');
+  lines.push('');
+
+  // Date
+  const date = content.date || new Date().toISOString().slice(0,10);
+  lines.push('\\textcolor{muted}{' + escapeLatex(date) + '}');
+  lines.push('');
+  lines.push('\\vspace{6pt}');
+  lines.push('');
+
+  // Recipient
   if (content.companyName) {
-    lines.push(escapeLatex(content.companyName));
-    lines.push('\\\\[2pt]');
+    lines.push('\\textbf{' + escapeLatex(content.companyName) + '}\\\\');
   }
   if (content.roleTitle) {
-    lines.push(`{\\small Re: ${escapeLatex(content.roleTitle)} position}`);
+    lines.push(escapeLatex(content.roleTitle));
   }
-  lines.push('\\vspace{16pt}');
-
-  // ── Salutation ──
-  // Never invent a hiring manager name — use neutral salutation
-  lines.push('Dear Hiring Team,');
+  lines.push('');
   lines.push('\\vspace{8pt}');
+  lines.push('');
 
-  // ── Body paragraphs ──
+  // Salutation
+  lines.push('Dear Hiring Manager,');
+  lines.push('');
+
+  // Body
   if (content.paragraphs && content.paragraphs.length > 0) {
-    for (const para of content.paragraphs) {
-      lines.push(escapeLatex(para));
+    for (const p of content.paragraphs) {
+      lines.push(escapeLatex(p));
       lines.push('');
     }
   }
 
-  // ── Closing ──
-  lines.push('\\vspace{8pt}');
-  lines.push(content.closing || 'Sincerely,');
-  lines.push('\\vspace{24pt}');
-  if (name) {
-    lines.push(`\\textbf{${escapeLatex(name)}}`);
-  }
+  // Closing
+  lines.push('\\vspace{4pt}');
+  lines.push('');
+  lines.push('\\closing{Sincerely,}');
+  lines.push('');
+  lines.push('\\vspace{18pt}');
+  lines.push('');
 
+  lines.push('\\end{letter}');
   lines.push('\\end{document}');
-  return lines.join('\n') + '\n';
+  lines.push('');
+
+  return lines.join('\n');
 }

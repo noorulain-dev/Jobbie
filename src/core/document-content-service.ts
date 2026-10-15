@@ -33,6 +33,36 @@ export interface GenerationContext {
   savedAnswers: SavedAnswerItem[];
 }
 
+export interface SkillGroup { category: string; skills: string[]; }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  ai_ml: 'AI Systems & Automation',
+  email_infrastructure: 'AI Systems & Automation',
+  programming_languages: 'Programming & Engineering',
+  frameworks_libraries: 'Programming & Engineering',
+  methodologies: 'Programming & Engineering',
+  developer_tools: 'Programming & Engineering',
+  databases: 'Data & Infrastructure',
+  queues_async: 'Data & Infrastructure',
+  cloud_infrastructure: 'Infrastructure & Production',
+  crm_marketing: 'Integrations & Business Systems',
+  billing_auth: 'Integrations & Business Systems',
+};
+
+export function groupSkillsByCategory(skillNames: string[], master: MasterProfile): SkillGroup[] {
+  const skillByName = new Map(master.skills.map((s: any) => [s.name, s]));
+  const catMap = new Map<string, SkillGroup>();
+  for (const name of skillNames) {
+    const s = skillByName.get(name) as any;
+    const cat = s?.category || 'other';
+    const label = CATEGORY_LABELS[cat] || 'Other';
+    let group = catMap.get(label);
+    if (!group) { group = { category: label, skills: [] }; catMap.set(label, group); }
+    if (!group.skills.includes(name)) group.skills.push(name);
+  }
+  return [...catMap.values()];
+}
+
 export class DocumentContentService {
   private storage: ProfileStorage;
   private skillIntel: SkillIntelligenceService;
@@ -84,6 +114,9 @@ prepareResumeContent(ctx: GenerationContext): PreparedContent<ResumeContent> {
       content.summary = cp.narrativeSummary;
       evidence.push({ claim: 'Summary', source: 'careerProfile', profileField: 'narrativeSummary', approved: true });
     }
+    if (cp?.headline) {
+      content.headline = cp.headline;
+    }
     const expPriority = cp?.priorityExperienceIds || master.experience.map(e => e.id);
     const expMap = new Map(master.experience.map(e => [e.id, e]));
     const orderedExp = expPriority.map(id => expMap.get(id)!).filter(Boolean);
@@ -91,6 +124,7 @@ prepareResumeContent(ctx: GenerationContext): PreparedContent<ResumeContent> {
       content.experience = orderedExp.map(e => ({
         title: e!.title, company: e!.company, startDate: e!.startDate, endDate: e!.endDate,
         location: e!.location, bullets: e!.bulletPoints.map(b => b.text),
+        measurableAchievements: e!.measurableAchievements?.length ? e!.measurableAchievements : undefined,
         technologies: [...new Set([...e!.technologies, ...e!.bulletPoints.flatMap(b => b.technologies)])].length
           ? [...new Set([...e!.technologies, ...e!.bulletPoints.flatMap(b => b.technologies)])] : undefined,
       }));
@@ -100,14 +134,17 @@ prepareResumeContent(ctx: GenerationContext): PreparedContent<ResumeContent> {
     if (master.education.length) {
       content.education = master.education.map(e => ({
         degree: e.degree, major: e.major || undefined, institution: e.institution,
-        gpa: e.gpa || undefined, startDate: e.startDate || undefined, endDate: e.endDate || undefined,
+        startDate: e.startDate || undefined, endDate: e.endDate || undefined,
       }));
       evidence.push({ claim: 'Education', source: 'education', profileField: 'education[*]', approved: true });
     } else unresolved.push('No education.');
     if (approvedSkills.length) {
       const deemph = new Set(cp?.deemphasizedSkillIds || []);
       const primary = new Set(cp?.primarySkillIds || []);
-      content.skills = [...approvedSkills.filter(s => primary.has(s)), ...approvedSkills.filter(s => !primary.has(s) && !deemph.has(s))];
+      const visibleIds = approvedSkills.filter(s => !deemph.has(s));
+      const orderedNames = [...visibleIds.filter(s => primary.has(s)), ...visibleIds.filter(s => !primary.has(s))];
+      content.skills = orderedNames;
+      content.skillGroups = groupSkillsByCategory(orderedNames, master);
       evidence.push({ claim: 'Skills', source: 'skills', profileField: 'skills[*]', approved: true });
     }
     const unapproved = master.skills.filter(s => s.status !== 'EXPLICIT_KNOWN' && s.status !== 'USER_APPROVED_KNOWN');
@@ -119,11 +156,12 @@ prepareResumeContent(ctx: GenerationContext): PreparedContent<ResumeContent> {
       content.projects = orderedProj.map(p => ({
         name: p.name, description: p.description, url: p.url || undefined,
         technologies: p.technologies.length ? p.technologies : undefined,
+        measurableOutcomes: p.measurableOutcomes?.length ? p.measurableOutcomes : undefined,
       }));
       evidence.push({ claim: 'Projects', source: 'projects', profileField: 'projects[*]', approved: true });
     }
     if (master.certifications.length) { content.certifications = master.certifications.map(c => c.title); evidence.push({ claim: 'Certs', source: 'certifications', profileField: 'certifications[*]', approved: true }); }
-    if (master.languages.length) { content.languages = master.languages.map(l => `${l.language} (${l.proficiency})`); evidence.push({ claim: 'Languages', source: 'languages', profileField: 'languages[*]', approved: true }); }
+    // Languages intentionally excluded from resume unless a job explicitly requires them.
     if (master.awards.length) { content.awards = master.awards.map(a => a.title); evidence.push({ claim: 'Awards', source: 'awards', profileField: 'awards[*]', approved: true }); }
     return { content, evidence, warnings, unresolved };
   }
@@ -136,6 +174,8 @@ prepareResumeContent(ctx: GenerationContext): PreparedContent<ResumeContent> {
     const content: CoverLetterContent = {
       firstName: master.personal.firstName, lastName: master.personal.lastName,
       email: master.personal.email, phone: master.personal.phone,
+      city: master.personal.city, provinceState: master.personal.provinceState,
+      linkedin: master.personal.linkedin, github: master.personal.github,
       date: new Date().toISOString().slice(0, 10),
       companyName: jc.companyName || undefined,
       roleTitle: jc.roleTitle || undefined,

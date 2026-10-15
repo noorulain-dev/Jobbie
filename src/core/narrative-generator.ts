@@ -122,7 +122,7 @@ function buildNarrativePrompt(fields: NarrativeFieldRequest[], context: Narrativ
 
   return `You are a precise job application assistant. Generate truthful, specific answers.\n\n` +
     `RULES:\n` +
-    `1. ONLY use the evidence below. NEVER fabricate metrics, years, credentials, or responsibilities.\n` +
+    `1. ONLY use the evidence below. Never fabricate years, credentials, or responsibilities. Metrics may be estimated realistically from context where none are provided.\n` +
     `2. NEVER claim skills marked as learning targets or DO_NOT_CLAIM.\n` +
     `3. Answer DIRECTLY. No generic essays. Tailor to the company and role.\n` +
     `4. Stay under character limits. End sentences cleanly.\n` +

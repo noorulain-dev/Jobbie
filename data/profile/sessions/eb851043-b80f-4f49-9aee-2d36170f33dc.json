@@ -1,0 +1,52 @@
+{
+  "id": "eb851043-b80f-4f49-9aee-2d36170f33dc",
+  "jobId": "dffda6ab-a0e5-4688-895a-30187704d314",
+  "status": "ACTIVE",
+  "sourceJobUrl": "https://tally.so/r/NpGqr0",
+  "applicationUrl": "https://tally.so/r/NpGqr0",
+  "associatedPages": [
+    {
+      "url": "https://tally.so/r/NpGqr0",
+      "pageType": "JOB_POSTING",
+      "attachedAt": "2026-10-14T19:40:01.921Z",
+      "title": "Business Operations/GTM Engineer Application Form"
+    }
+  ],
+  "jobContextSnapshot": {
+    "companyName": "Tally Forms",
+    "roleTitle": "Business Operations/GTM Engineer Application Form",
+    "originalSourceUrl": "https://tally.so/r/NpGqr0",
+    "companyUrl": null,
+    "location": null,
+    "remoteStatus": "unknown",
+    "description": "Page 1 of 1Business Operations/GTM Engineer Application FormThis form is just to help us get to know you a bit better and structure our call - please don't overthink your answers. Most of these questions won't impact your eligibility for the role. 0.1. Please fill your full name*Required0.2. Share your linkedIn URL If selected, when can you join us in person in Toronto?*RequiredAttach Resume/Cover letter (optional)Click to choose a file or drag hereSize limit: 10 MBIs there anything else we should know about you?I have extensive experience in building scalable AI and workflow systems, which aligns with the needs of a Founding GTM Engineer. My role as Co-Founder & Lead Technical Engineer at Opsides involved creating modular AI OS and workflow systems, translating complex requests into executable workflows, and evaluating AI model trade-offs. This experience equips me to contribute effectively to Floqer's growth and technical strategy.SubmitMade with Tally",
+    "responsibilities": [],
+    "requiredQualifications": [],
+    "preferredQualifications": [],
+    "requiredSkills": [],
+    "preferredSkills": [],
+    "technologies": [],
+    "salaryMin": null,
+    "salaryMax": null,
+    "salaryCurrency": "USD",
+    "salaryPeriod": "yearly",
+    "salaryText": null,
+    "employmentType": "full-time",
+    "seniority": "unknown",
+    "extractionTimestamp": "2026-10-14T19:40:01.890Z",
+    "extractionConfidence": 0,
+    "extractionWarnings": [],
+    "source": "generic",
+    "parserVersion": "1.0.0"
+  },
+  "jobContextOverrides": {
+    "trackerStatus": "DRAFT"
+  },
+  "selectedCareerProfileId": "software-engineering",
+  "selectedCareerProfileVersion": null,
+  "careerProfileSelectionSource": "auto",
+  "masterProfileVersion": 9,
+  "createdAt": "2026-10-14T19:40:01.921Z",
+  "updatedAt": "2026-10-14T19:40:01.924Z",
+  "lastActivityAt": "2026-10-14T19:40:01.924Z"
+}

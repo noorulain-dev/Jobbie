@@ -555,15 +555,36 @@ export function createCareerBrainServer(options: ServerOptions = {}) {
 
 
       // ── Phase 6: Document Generation ──────────────────────
+      function findFileRecursive(dir, filename) {
+  try {
+    const entries = require('fs').readdirSync(dir, { withFileTypes: true });
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        const found = findFileRecursive(require('path').join(dir, e.name), filename);
+        if (found) return found;
+      } else if (e.name === filename) {
+        return require('path').join(dir, e.name);
+      }
+    }
+  } catch {}
+  return null;
+}
+
       // Serve generated PDF files
       if (pathname.startsWith('/api/generated/') && req.method === 'GET') {
-        const filePath = path.resolve(documentStore.getGeneratedDir(), pathname.replace('/api/generated/', ''));
+        const relativePath = decodeURIComponent(pathname.replace('/api/generated/', ''));
+        const filePath = path.resolve(documentStore.getGeneratedDir(), relativePath);
         if (!filePath.startsWith(path.resolve(documentStore.getGeneratedDir()))) { sendJson(403, { error: 'Access denied' }); return; }
-        if (!fs.existsSync(filePath)) { sendJson(404, { error: 'File not found' }); return; }
-        const ext = path.extname(filePath).toLowerCase();
+        let actualPath = filePath;
+        if (!fs.existsSync(filePath) && !relativePath.includes('/') && !relativePath.includes('\\')) {
+          const found = findFileRecursive(documentStore.getGeneratedDir(), relativePath);
+          if (found) actualPath = found;
+        }
+        if (!fs.existsSync(actualPath)) { sendJson(404, { error: 'File not found' }); return; }
+        const ext = path.extname(actualPath).toLowerCase();
         const mime = ext === '.pdf' ? 'application/pdf' : ext === '.tex' ? 'text/plain; charset=utf-8' : 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': mime, 'Content-Disposition': `inline; filename="${path.basename(filePath)}"` });
-        res.end(fs.readFileSync(filePath));
+        res.writeHead(200, { 'Content-Type': mime, 'Content-Disposition': `inline; filename="${path.basename(actualPath)}"` });
+        res.end(fs.readFileSync(actualPath));
         return;
       }
 
@@ -646,15 +667,19 @@ export function createCareerBrainServer(options: ServerOptions = {}) {
       if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/generate-cover-letter') && req.method === 'POST') {
         const id = pathname.replace('/api/sessions/', '').replace('/generate-cover-letter', '');
         const result = await coverLetterGenerator.generateCoverLetter(id);
+        if (result.pdfPath) {
+          (result as any).relativePdfPath = path.relative(documentStore.getGeneratedDir(), result.pdfPath);
+        }
         sendJson(result.success ? 200 : 422, result);
         return;
       }
-
-
-      // ── Phase 6: Resume Generation ──────────────────────
+// ── Phase 6: Resume Generation ──────────────────────
       if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/generate-resume') && req.method === 'POST') {
         const id = pathname.replace('/api/sessions/', '').replace('/generate-resume', '');
         const result = await resumeGenerator.generateResume(id);
+        if (result.pdfPath) {
+          (result as any).relativePdfPath = path.relative(documentStore.getGeneratedDir(), result.pdfPath);
+        }
         sendJson(result.success ? 200 : 422, result);
         return;
       }
